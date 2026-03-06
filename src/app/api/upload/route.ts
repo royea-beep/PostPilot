@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { put } from '@vercel/blob';
-import crypto from 'node:crypto';
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB for DB storage
 const ALLOWED_TYPES = new Set([
   'image/jpeg', 'image/png', 'image/webp', 'image/gif',
   'video/mp4', 'video/quicktime', 'video/webm',
@@ -19,26 +17,18 @@ export async function POST(req: NextRequest) {
     if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     if (!brandToken) return NextResponse.json({ error: 'Missing brand token' }, { status: 400 });
 
-    // Validate brand
     const brand = await prisma.brand.findUnique({ where: { token: brandToken } });
     if (!brand) return NextResponse.json({ error: 'Invalid brand token' }, { status: 404 });
 
-    // Validate file
     if (!ALLOWED_TYPES.has(file.type)) {
       return NextResponse.json({ error: 'File type not allowed. Use JPEG, PNG, WebP, GIF, MP4, MOV, or WebM.' }, { status: 400 });
     }
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: 'File too large. Maximum 100MB.' }, { status: 400 });
+      return NextResponse.json({ error: 'File too large. Maximum 10MB.' }, { status: 400 });
     }
 
-    // Upload to Vercel Blob
-    const ext = file.name.split('.').pop() || 'bin';
-    const blobName = `${brand.id}/${crypto.randomUUID()}.${ext}`;
-    const blob = await put(blobName, file, {
-      access: 'public',
-      contentType: file.type,
-    });
-
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const base64 = buffer.toString('base64');
     const mediaType = file.type.startsWith('video/') ? 'video' : 'photo';
 
     const upload = await prisma.mediaUpload.create({
@@ -47,7 +37,8 @@ export async function POST(req: NextRequest) {
         filename: file.name,
         mimeType: file.type,
         sizeBytes: file.size,
-        filePath: blob.url,
+        filePath: `db://${file.name}`,
+        fileData: base64,
         mediaType,
       },
     });

@@ -125,7 +125,8 @@ model MediaUpload {
   width       Int?
   height      Int?
   durationSec Float?  // for video
-  filePath    String  // local path to uploaded file
+  filePath    String  // URL or identifier
+  fileData    String? // base64-encoded file data for serverless
   thumbnailPath String?
 
   mediaType String  // photo, video

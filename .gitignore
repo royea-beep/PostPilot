@@ -7,3 +7,5 @@ out/
 *.db-journal
 src/generated/
 uploads/
+
+.vercel
