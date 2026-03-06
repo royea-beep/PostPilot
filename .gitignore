@@ -9,3 +9,5 @@ src/generated/
 uploads/
 
 .vercel
+.env.vercel
+.env.vercel2
