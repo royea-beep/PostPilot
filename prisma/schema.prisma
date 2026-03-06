@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Agency/developer accounts
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  businessName String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  brands        Brand[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// Client brands managed by agency
+model Brand {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  logoUrl     String?
+  industry    String?
+  language    String   @default("en") // en, he
+  timezone    String   @default("Asia/Jerusalem")
+
+  // Magic link for client access
+  token     String   @unique @default(cuid())
+  tokenExpiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  socialConnections SocialConnection[]
+  styleProfile      StyleProfile?
+  mediaUploads      MediaUpload[]
+  posts             Post[]
+  postDrafts        PostDraft[]
+  auditLogs         AuditLog[]
+
+  @@index([userId])
+}
+
+// Connected social media accounts
+model SocialConnection {
+  id        String @id @default(cuid())
+  brandId   String
+  brand     Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  platform       String   // instagram, facebook, tiktok, twitter
+  platformUserId String?
+  accountName    String?
+  accountAvatar  String?
+
+  // Encrypted OAuth tokens
+  encryptedAccessToken  String?
+  encryptedRefreshToken String?
+  iv                    String?
+  authTag               String?
+  tokenExpiresAt        DateTime?
+  scopes                String?
+
+  status    String   @default("PENDING") // PENDING, CONNECTED, EXPIRED, REVOKED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  posts Post[]
+
+  @@unique([brandId, platform])
+  @@index([brandId])
+}
+
+// Learned posting style per brand
+model StyleProfile {
+  id      String @id @default(cuid())
+  brandId String @unique
+  brand   Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  // Style DNA (JSON)
+  tone           String? // casual, professional, playful, etc.
+  emojiStyle     String? // heavy, moderate, none
+  hashtagStyle   String? // many (10+), moderate (3-5), minimal (1-2), none
+  captionLength  String? // short (<50), medium (50-150), long (150+)
+  favoriteEmojis String? // JSON array of most-used emojis
+  favoriteHashtags String? // JSON array of go-to hashtags
+  sampleCaptions String? // JSON array of past captions for AI context
+  postingPatterns String? // JSON: best times, frequency, etc.
+
+  analyzedPostCount Int      @default(0)
+  lastAnalyzedAt    DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Uploaded media files
+model MediaUpload {
+  id      String @id @default(cuid())
+  brandId String
+  brand   Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  filename    String
+  mimeType    String
+  sizeBytes   Int
+  width       Int?
+  height      Int?
+  durationSec Float?  // for video
+  filePath    String  // local path to uploaded file
+  thumbnailPath String?
+
+  mediaType String  // photo, video
+  createdAt DateTime @default(now())
+
+  posts      Post[]
+  postDrafts PostDraft[]
+
+  @@index([brandId])
+}
+
+// AI-generated draft options
+model PostDraft {
+  id      String @id @default(cuid())
+  brandId String
+  brand   Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  mediaId String
+  media   MediaUpload @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  // Generated content
+  caption     String
+  hashtags    String   // JSON array
+  format      String   // story, post, reel
+  platforms   String   // JSON array of target platforms
+  optionIndex Int      // 1, 2, or 3
+
+  // Selection
+  selected  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  post Post?
+
+  @@index([brandId])
+  @@index([mediaId])
+}
+
+// Published posts
+model Post {
+  id        String @id @default(cuid())
+  brandId   String
+  brand     Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     MediaUpload @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  draftId   String? @unique
+  draft     PostDraft? @relation(fields: [draftId], references: [id])
+  connectionId String
+  connection   SocialConnection @relation(fields: [connectionId], references: [id])
+
+  // Post details
+  caption   String
+  hashtags  String   // JSON array
+  format    String   // story, post, reel
+  platform  String   // instagram, facebook, tiktok
+
+  // Platform response
+  platformPostId String?
+  platformUrl    String?
+  status         String   @default("PENDING") // PENDING, PUBLISHING, PUBLISHED, FAILED
+  errorMessage   String?
+
+  // Scheduling
+  scheduledFor DateTime?
+  publishedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([brandId])
+  @@index([connectionId])
+}
+
+// Audit trail
+model AuditLog {
+  id        String  @id @default(cuid())
+  brandId   String?
+  brand     Brand?  @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  userId    String?
+  action    String
+  metadata  String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([brandId])
+}
