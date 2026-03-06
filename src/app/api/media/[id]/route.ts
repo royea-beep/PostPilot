@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 
-// GET /api/media/:id — serve an uploaded media file
+// GET /api/media/:id — redirect to media file URL
 export async function GET(req: NextRequest) {
   try {
     const id = req.nextUrl.pathname.split('/').pop();
@@ -16,25 +14,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Media not found' }, { status: 404 });
     }
 
-    const absolutePath = path.isAbsolute(media.filePath)
-      ? media.filePath
-      : path.resolve(media.filePath);
-
-    let buffer: Buffer;
-    try {
-      buffer = await readFile(absolutePath);
-    } catch {
-      return NextResponse.json({ error: 'File not found on disk' }, { status: 404 });
-    }
-
-    return new NextResponse(new Uint8Array(buffer), {
-      status: 200,
-      headers: {
-        'Content-Type': media.mimeType,
-        'Content-Length': String(buffer.length),
-        'Cache-Control': 'public, max-age=31536000, immutable',
-      },
-    });
+    // filePath is now a Vercel Blob URL — redirect to it
+    return NextResponse.redirect(media.filePath, 302);
   } catch (err) {
     console.error('Media serve error:', err);
     return NextResponse.json({ error: 'Failed to serve media' }, { status: 500 });

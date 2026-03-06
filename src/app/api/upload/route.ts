@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { writeFile, mkdir } from 'node:fs/promises';
-import path from 'node:path';
+import { put } from '@vercel/blob';
 import crypto from 'node:crypto';
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
@@ -32,15 +31,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File too large. Maximum 100MB.' }, { status: 400 });
     }
 
-    // Save file
+    // Upload to Vercel Blob
     const ext = file.name.split('.').pop() || 'bin';
-    const filename = `${crypto.randomUUID()}.${ext}`;
-    const uploadDir = path.resolve('uploads', brand.id);
-    await mkdir(uploadDir, { recursive: true });
-    const filePath = path.join(uploadDir, filename);
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filePath, buffer);
+    const blobName = `${brand.id}/${crypto.randomUUID()}.${ext}`;
+    const blob = await put(blobName, file, {
+      access: 'public',
+      contentType: file.type,
+    });
 
     const mediaType = file.type.startsWith('video/') ? 'video' : 'photo';
 
@@ -50,7 +47,7 @@ export async function POST(req: NextRequest) {
         filename: file.name,
         mimeType: file.type,
         sizeBytes: file.size,
-        filePath,
+        filePath: blob.url,
         mediaType,
       },
     });
