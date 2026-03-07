@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { AuthProvider } from '@/lib/auth-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ProjectLearner } from '@/components/ProjectLearner';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="min-h-screen antialiased">
         <ErrorBoundary><AuthProvider>{children}</AuthProvider></ErrorBoundary>
+        <ProjectLearner />
       </body>
     </html>
   );
