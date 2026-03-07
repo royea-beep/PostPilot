@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
 import { AuthProvider } from '@/lib/auth-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { LanguageProvider } from '@/lib/language-context';
+import { LanguageToggle } from '@/components/LanguageToggle';
 import { ProjectLearner } from '@/components/ProjectLearner';
+import { ShareButton } from '@/components/ShareButton';
+import { CookieConsent } from '@/components/CookieConsent';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -13,8 +17,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="min-h-screen antialiased">
-        <ErrorBoundary><AuthProvider>{children}</AuthProvider></ErrorBoundary>
+        <LanguageProvider>
+          <ErrorBoundary><AuthProvider>{children}</AuthProvider></ErrorBoundary>
+          <LanguageToggle />
+        </LanguageProvider>
         <ProjectLearner />
+        <CookieConsent />
+        <ShareButton />
       </body>
     </html>
   );
