@@ -140,11 +140,17 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
         return;
       }
       const data = await res.json();
-      setDrafts(data);
+      setDrafts(data.drafts || data);
 
-      // TokenWise: measure output and show "done" badge
-      const outputSize = data.reduce((sum: number, d: Draft) => sum + d.caption.length + d.hashtags.join(' ').length, 0);
-      setAiOutputChars(outputSize);
+      // TokenWise: use real token counts from API if available, otherwise estimate
+      if (data.aiUsage) {
+        setAiInputChars(data.aiUsage.inputTokens * 3.5);
+        setAiOutputChars(data.aiUsage.outputTokens * 3.5);
+      } else {
+        const draftsArr = data.drafts || data;
+        const outputSize = draftsArr.reduce((sum: number, d: Draft) => sum + d.caption.length + d.hashtags.join(' ').length, 0);
+        setAiOutputChars(outputSize);
+      }
       setAiCostStatus('done');
 
       setStep('captions');

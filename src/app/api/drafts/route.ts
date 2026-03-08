@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     if (!media) return NextResponse.json({ error: 'Media not found' }, { status: 404 });
 
     // Generate AI captions
-    const options = await generateCaptions({
+    const result = await generateCaptions({
       format,
       platforms,
       mediaType: media.mediaType as 'photo' | 'video',
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     // Save drafts
     const drafts = await Promise.all(
-      options.map((opt, i) =>
+      result.options.map((opt, i) =>
         prisma.postDraft.create({
           data: {
             brandId: brand.id,
@@ -54,16 +54,17 @@ export async function POST(req: NextRequest) {
       )
     );
 
-    return NextResponse.json(
-      drafts.map((d, i) => ({
+    return NextResponse.json({
+      drafts: drafts.map((d, i) => ({
         id: d.id,
         caption: d.caption,
-        hashtags: options[i].hashtags,
-        style: options[i].style,
+        hashtags: result.options[i].hashtags,
+        style: result.options[i].style,
         format: d.format,
         optionIndex: d.optionIndex,
-      }))
-    );
+      })),
+      aiUsage: result.aiUsage,
+    });
   } catch (err) {
     console.error('Drafts error:', err);
     return NextResponse.json({ error: 'Failed to generate captions' }, { status: 500 });

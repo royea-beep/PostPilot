@@ -27,6 +27,11 @@ interface CaptionOption {
   style: string; // "on-brand", "trendy", "minimal"
 }
 
+export interface CaptionResult {
+  options: CaptionOption[];
+  aiUsage?: { inputTokens: number; outputTokens: number; model: string };
+}
+
 function buildStyleContext(profile: StyleProfile | null | undefined): string {
   if (!profile) return 'No style profile available. Generate diverse options.';
 
@@ -52,7 +57,7 @@ function buildStyleContext(profile: StyleProfile | null | undefined): string {
   return parts.length > 0 ? parts.join('\n') : 'No style profile available.';
 }
 
-export async function generateCaptions(options: GenerateOptions): Promise<CaptionOption[]> {
+export async function generateCaptions(options: GenerateOptions): Promise<CaptionResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
   const styleContext = buildStyleContext(options.styleProfile);
@@ -86,7 +91,7 @@ Respond ONLY with valid JSON array:
 
   // If no API key, generate smart fallback options
   if (!apiKey) {
-    return generateFallbackCaptions(options);
+    return { options: generateFallbackCaptions(options) };
   }
 
   try {
@@ -106,23 +111,30 @@ Respond ONLY with valid JSON array:
 
     if (!res.ok) {
       console.error('AI API error:', res.status);
-      return generateFallbackCaptions(options);
+      return { options: generateFallbackCaptions(options) };
     }
 
     const data = await res.json();
     const text = data.content?.[0]?.text || '';
 
+    // Extract token usage from Anthropic response
+    const aiUsage = data.usage ? {
+      inputTokens: data.usage.input_tokens as number,
+      outputTokens: data.usage.output_tokens as number,
+      model: 'claude-haiku-4',
+    } : undefined;
+
     // Extract JSON from response
     const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return generateFallbackCaptions(options);
+    if (!jsonMatch) return { options: generateFallbackCaptions(options) };
 
     const parsed = JSON.parse(jsonMatch[0]) as CaptionOption[];
-    if (!Array.isArray(parsed) || parsed.length < 3) return generateFallbackCaptions(options);
+    if (!Array.isArray(parsed) || parsed.length < 3) return { options: generateFallbackCaptions(options) };
 
-    return parsed.slice(0, 3);
+    return { options: parsed.slice(0, 3), aiUsage };
   } catch (err) {
     console.error('AI caption generation failed:', err);
-    return generateFallbackCaptions(options);
+    return { options: generateFallbackCaptions(options) };
   }
 }
 
