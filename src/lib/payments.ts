@@ -45,6 +45,15 @@ export function getPlanLimits(plan: string) {
   return PLANS[plan as PlanKey] || PLANS.FREE;
 }
 
+/** Public plan display for billing UI (SecretSauce: single source of truth, no variant IDs). */
+export function getPlanDisplay(): { key: string; name: string; price: number; features: string[]; popular?: boolean }[] {
+  return [
+    { key: 'FREE', name: PLANS.FREE.name, price: PLANS.FREE.price, features: ['2 brands', '10 posts/month', 'AI captions', '3 platforms'] },
+    { key: 'PRO', name: PLANS.PRO.name, price: PLANS.PRO.price, popular: true, features: ['10 brands', '100 posts/month', 'AI captions', 'Style DNA', 'Priority support'] },
+    { key: 'AGENCY', name: PLANS.AGENCY.name, price: PLANS.AGENCY.price, features: ['Unlimited brands', 'Unlimited posts', 'All Pro features', 'Team members (soon)', 'White-label (soon)'] },
+  ];
+}
+
 /** Create a LemonSqueezy checkout URL for a plan */
 export async function createCheckoutUrl(opts: {
   plan: 'PRO' | 'AGENCY';

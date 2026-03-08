@@ -18,35 +18,15 @@ interface BillingData {
   };
 }
 
-const PLANS = [
-  {
-    key: 'FREE',
-    name: 'Free',
-    price: 0,
-    icon: Shield,
-    features: ['2 brands', '10 posts/month', 'AI captions', '3 platforms'],
-  },
-  {
-    key: 'PRO',
-    name: 'Pro',
-    price: 29,
-    icon: Zap,
-    popular: true,
-    features: ['10 brands', '100 posts/month', 'AI captions', 'Style DNA', 'Priority support'],
-  },
-  {
-    key: 'AGENCY',
-    name: 'Agency',
-    price: 79,
-    icon: Crown,
-    features: ['Unlimited brands', 'Unlimited posts', 'All Pro features', 'Team members (soon)', 'White-label (soon)'],
-  },
-];
+const PLAN_ICONS: Record<string, typeof Shield> = { FREE: Shield, PRO: Zap, AGENCY: Crown };
+
+type PlanDisplay = { key: string; name: string; price: number; features: string[]; popular?: boolean };
 
 export default function BillingPage() {
   const { user, authFetch, loading: authLoading } = useAuth();
   const router = useRouter();
   const [billing, setBilling] = useState<BillingData | null>(null);
+  const [plans, setPlans] = useState<PlanDisplay[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
 
@@ -55,7 +35,12 @@ export default function BillingPage() {
       router.push('/login');
       return;
     }
-    if (user) fetchBilling();
+    if (user) {
+      Promise.all([
+        authFetch('/api/billing').then((r) => (r.ok ? r.json() : null)).then(setBilling).catch(() => {}),
+        fetch('/api/billing/plans').then((r) => (r.ok ? r.json() : [])).then(setPlans).catch(() => setPlans([])),
+      ]).finally(() => setLoading(false));
+    } else setLoading(false);
   }, [user, authLoading]);
 
   const fetchBilling = async () => {
@@ -146,12 +131,12 @@ export default function BillingPage() {
           )}
         </div>
 
-        {/* Plans */}
+        {/* Plans (fetched from /api/billing/plans — SecretSauce: no client-side pricing) */}
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose Your Plan</h2>
         <div className="grid md:grid-cols-3 gap-4">
-          {PLANS.map((plan) => {
+          {(plans.length ? plans : [{ key: 'FREE', name: 'Free', price: 0, features: [] }, { key: 'PRO', name: 'Pro', price: 29, popular: true, features: [] }, { key: 'AGENCY', name: 'Agency', price: 79, features: [] }]).map((plan) => {
             const isCurrent = plan.key === currentPlan;
-            const Icon = plan.icon;
+            const Icon = PLAN_ICONS[plan.key] ?? Shield;
 
             return (
               <div
