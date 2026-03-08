@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, use } from 'react';
 import { Upload, Camera, Instagram, Facebook, Play, Check, Loader2, Sparkles, Image as ImageIcon, Video, ArrowRight, ChevronLeft } from 'lucide-react';
+import { TokenWiseBadge } from '@royea/tokenwise/badge-react';
 
 interface BrandInfo {
   name: string;
@@ -59,6 +60,11 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
   // Publish state
   const [publishing, setPublishing] = useState(false);
 
+  // TokenWise AI cost tracking
+  const [aiCostStatus, setAiCostStatus] = useState<'idle' | 'thinking' | 'done'>('idle');
+  const [aiInputChars, setAiInputChars] = useState(0);
+  const [aiOutputChars, setAiOutputChars] = useState(0);
+
   const isHe = brandInfo?.language === 'he';
   const dir = isHe ? 'rtl' : 'ltr';
 
@@ -115,23 +121,36 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
     setGeneratingCaptions(true);
     setError(null);
 
+    // TokenWise: estimate input size and show "thinking" badge
+    const requestBody = JSON.stringify({ brandToken: token, mediaId, format, platforms, customPrompt: customPrompt || undefined });
+    setAiInputChars(requestBody.length + 500); // ~500 chars for system prompt
+    setAiCostStatus('thinking');
+
     try {
       const res = await fetch('/api/drafts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brandToken: token, mediaId, format, platforms, customPrompt: customPrompt || undefined }),
+        body: requestBody,
       });
       if (!res.ok) {
         const data = await res.json();
         setError(data.error || 'Failed to generate captions');
         setGeneratingCaptions(false);
+        setAiCostStatus('idle');
         return;
       }
       const data = await res.json();
       setDrafts(data);
+
+      // TokenWise: measure output and show "done" badge
+      const outputSize = data.reduce((sum: number, d: Draft) => sum + d.caption.length + d.hashtags.join(' ').length, 0);
+      setAiOutputChars(outputSize);
+      setAiCostStatus('done');
+
       setStep('captions');
     } catch {
       setError('Failed to generate captions');
+      setAiCostStatus('idle');
     }
     setGeneratingCaptions(false);
   };
@@ -357,15 +376,26 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
                 )}
               </button>
             </div>
+
+            {aiCostStatus !== 'idle' && (
+              <div className="flex justify-center pt-1">
+                <TokenWiseBadge status={aiCostStatus} inputChars={aiInputChars} outputChars={aiOutputChars} model="claude-haiku-4" />
+              </div>
+            )}
           </div>
         )}
 
         {/* Step 3: Pick from 3 AI options */}
         {step === 'captions' && (
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold text-gray-900 text-center">
-              {isHe ? 'בחרו סגנון' : 'Pick your style'}
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {isHe ? 'בחרו סגנון' : 'Pick your style'}
+              </h2>
+              {aiCostStatus === 'done' && (
+                <TokenWiseBadge status="done" inputChars={aiInputChars} outputChars={aiOutputChars} model="claude-haiku-4" />
+              )}
+            </div>
 
             {drafts.map((draft) => {
               const style = STYLE_LABELS[draft.style] || STYLE_LABELS['on-brand'];

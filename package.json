@@ -15,6 +15,7 @@
   "dependencies": {
     "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
     "@prisma/client": "^6.19.2",
+    "@royea/tokenwise": "^0.4.0",
     "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "^25.3.5",
     "@types/react": "^19.2.14",
