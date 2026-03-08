@@ -14,7 +14,7 @@ interface LanguageContextValue {
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Language>("en");
+  const [lang, setLang] = useState<Language>("he");
 
   useEffect(() => {
     const saved = localStorage.getItem("postpilot-lang");
