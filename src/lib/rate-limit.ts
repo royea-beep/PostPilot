@@ -1,31 +1,35 @@
-const rateMap = new Map<string, { count: number; expiresAt: number }>();
+import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
+import { NextRequest, NextResponse } from 'next/server';
 
-export function rateLimit(
-  key: string,
-  limit: number,
-  windowMs: number
-): { success: boolean; remaining: number } {
-  const now = Date.now();
+// ftable caption API: 30 requests per 15 min per IP (server-to-server from Supabase)
+export const ftableCaptionLimiter = new RateLimiterMemory({
+  points: 30,
+  duration: 15 * 60,
+  keyPrefix: 'ftable-caption',
+});
 
-  // Clean up expired entries
-  for (const [k, v] of rateMap) {
-    if (v.expiresAt <= now) {
-      rateMap.delete(k);
+function getClientIp(req: NextRequest): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('x-real-ip')
+    || '127.0.0.1';
+}
+
+export async function applyRateLimit(
+  limiter: RateLimiterMemory,
+  req: NextRequest
+): Promise<NextResponse | null> {
+  const ip = getClientIp(req);
+  try {
+    await limiter.consume(ip);
+    return null;
+  } catch (err) {
+    if (err instanceof RateLimiterRes) {
+      const retryAfter = Math.ceil(err.msBeforeNext / 1000);
+      return NextResponse.json(
+        { error: 'Too many requests. Try again later.' },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      );
     }
+    return null;
   }
-
-  const entry = rateMap.get(key);
-
-  if (!entry || entry.expiresAt <= now) {
-    rateMap.set(key, { count: 1, expiresAt: now + windowMs });
-    return { success: true, remaining: limit - 1 };
-  }
-
-  entry.count++;
-
-  if (entry.count > limit) {
-    return { success: false, remaining: 0 };
-  }
-
-  return { success: true, remaining: limit - entry.count };
 }

@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "postinstall": "prisma generate"
   },
@@ -15,7 +15,11 @@
   "dependencies": {
     "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
     "@prisma/client": "^6.19.2",
+    "@royea/flush-queue": "file:../FlushQueue",
+    "@royea/prompt-guard": "file:../PromptGuard",
+    "@royea/shared-utils": "file:../shared-utils",
     "@royea/tokenwise": "^0.4.0",
+    "@royea/url-guard": "file:../url-guard",
     "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "^25.3.5",
     "@types/react": "^19.2.14",
@@ -26,6 +30,7 @@
     "next": "^16.1.6",
     "postcss": "^8.5.8",
     "prisma": "^6.19.2",
+    "rate-limiter-flexible": "^9.1.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "sharp": "^0.34.5",
