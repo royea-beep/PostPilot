@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { verifyPassword, signAccessToken, signRefreshToken } from '@/lib/auth';
+import { verifyPassword, signAccessToken, signRefreshToken } from '@royea/shared-utils/auth';
 import { loginSchema } from '@/lib/validation';
 
 export async function POST(req: NextRequest) {

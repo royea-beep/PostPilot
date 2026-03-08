@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { withAuth } from '@/lib/auth-guard';
+import { withAuth } from '@royea/shared-utils/auth-guard';
+
+type RouteContext = { params: Promise<Record<string, never>> };
 
 /**
  * GET /api/platforms/connected?brandId=xxx
@@ -8,7 +10,7 @@ import { withAuth } from '@/lib/auth-guard';
  * Returns all social connections for a brand, with status info.
  * Tokens are NOT returned — only connection metadata.
  */
-export const GET = withAuth(async (req: NextRequest, userId: string) => {
+export const GET = withAuth((async (req: NextRequest, userId: string) => {
   const brandId = req.nextUrl.searchParams.get('brandId');
 
   if (!brandId) {
@@ -50,14 +52,14 @@ export const GET = withAuth(async (req: NextRequest, userId: string) => {
   }));
 
   return NextResponse.json(enriched);
-});
+}) as unknown as import('@royea/shared-utils/auth-guard').AuthRouteHandler) as unknown as (req: NextRequest, _context: RouteContext) => Promise<NextResponse>;
 
 /**
  * DELETE /api/platforms/connected?brandId=xxx&platform=yyy
  *
  * Disconnects a platform by revoking the connection record.
  */
-export const DELETE = withAuth(async (req: NextRequest, userId: string) => {
+export const DELETE = withAuth((async (req: NextRequest, userId: string) => {
   const brandId = req.nextUrl.searchParams.get('brandId');
   const platform = req.nextUrl.searchParams.get('platform');
 
@@ -106,4 +108,4 @@ export const DELETE = withAuth(async (req: NextRequest, userId: string) => {
   });
 
   return NextResponse.json({ success: true });
-});
+}) as unknown as import('@royea/shared-utils/auth-guard').AuthRouteHandler) as unknown as (req: NextRequest, _context: RouteContext) => Promise<NextResponse>;

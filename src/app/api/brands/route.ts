@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { withAuth } from '@/lib/auth-guard';
+import { withAuth } from '@royea/shared-utils/auth-guard';
 import { createBrandSchema } from '@/lib/validation';
 import { getPlanLimits } from '@/lib/payments';
 
+type RouteContext = { params: Promise<Record<string, never>> };
+
 // GET /api/brands — list all brands for the authenticated user
-export const GET = withAuth(async (_req: NextRequest, userId: string) => {
+export const GET = withAuth((async (_req: NextRequest, userId: string) => {
   const brands = await prisma.brand.findMany({
     where: { userId },
     include: {
@@ -22,10 +24,10 @@ export const GET = withAuth(async (_req: NextRequest, userId: string) => {
   }));
 
   return NextResponse.json(mapped);
-});
+}) as unknown as import('@royea/shared-utils/auth-guard').AuthRouteHandler) as unknown as (req: NextRequest, _context: RouteContext) => Promise<NextResponse>;
 
 // POST /api/brands — create a new brand
-export const POST = withAuth(async (req: NextRequest, userId: string) => {
+export const POST = withAuth((async (req: NextRequest, userId: string) => {
   try {
     const body = await req.json();
     const data = createBrandSchema.parse(body);
@@ -62,4 +64,4 @@ export const POST = withAuth(async (req: NextRequest, userId: string) => {
     console.error('Create brand error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-});
+}) as unknown as import('@royea/shared-utils/auth-guard').AuthRouteHandler) as unknown as (req: NextRequest, _context: RouteContext) => Promise<NextResponse>;

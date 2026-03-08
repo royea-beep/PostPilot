@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { withAuth } from '@/lib/auth-guard';
+import { withAuth } from '@royea/shared-utils/auth-guard';
 import { getPlanLimits } from '@/lib/payments';
 
-export const GET = withAuth(async (_req: NextRequest, userId: string) => {
+type RouteContext = { params: Promise<Record<string, never>> };
+
+export const GET = withAuth((async (_req: NextRequest, userId: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -29,4 +31,4 @@ export const GET = withAuth(async (_req: NextRequest, userId: string) => {
     brandsCount: user._count.brands,
     limits,
   });
-});
+}) as unknown as import('@royea/shared-utils/auth-guard').AuthRouteHandler) as unknown as (req: NextRequest, _context: RouteContext) => Promise<NextResponse>;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth } from '@royea/shared-utils/auth-context';
 import { useRouter } from 'next/navigation';
 import { Shield, Check, Zap, Crown, ArrowLeft, Loader2 } from 'lucide-react';
 

@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -218,4 +218,16 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([brandId])
+}
+
+// Client analytics events (batch from flush-queue)
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  type      String
+  payload   String?  // JSON
+  timestamp DateTime
+  createdAt DateTime @default(now())
+
+  @@index([type])
+  @@index([timestamp])
 }

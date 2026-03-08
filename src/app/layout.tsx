@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
-import { AuthProvider } from '@/lib/auth-context';
+import { AuthProvider } from '@royea/shared-utils/auth-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LanguageProvider } from '@/lib/language-context';
+import { EventsQueueProvider } from '@/lib/events-queue-context';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { ProjectLearner } from '@/components/ProjectLearner';
 import { ShareButton } from '@/components/ShareButton';
@@ -18,8 +19,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="min-h-screen antialiased">
         <LanguageProvider>
-          <ErrorBoundary><AuthProvider>{children}</AuthProvider></ErrorBoundary>
-          <LanguageToggle />
+          <EventsQueueProvider>
+            <ErrorBoundary><AuthProvider storageKey="postpilot_auth" refreshEndpoint="/api/auth/refresh">{children as never}</AuthProvider></ErrorBoundary>
+            <LanguageToggle />
+          </EventsQueueProvider>
         </LanguageProvider>
         <ProjectLearner />
         <CookieConsent />

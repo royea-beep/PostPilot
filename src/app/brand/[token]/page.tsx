@@ -60,10 +60,11 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
   // Publish state
   const [publishing, setPublishing] = useState(false);
 
-  // TokenWise AI cost tracking
+  // TokenWise AI cost tracking (model from API response, not in client bundle)
   const [aiCostStatus, setAiCostStatus] = useState<'idle' | 'thinking' | 'done'>('idle');
   const [aiInputChars, setAiInputChars] = useState(0);
   const [aiOutputChars, setAiOutputChars] = useState(0);
+  const [aiModel, setAiModel] = useState<string>('AI');
 
   const isHe = brandInfo?.language === 'he';
   const dir = isHe ? 'rtl' : 'ltr';
@@ -121,9 +122,9 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
     setGeneratingCaptions(true);
     setError(null);
 
-    // TokenWise: estimate input size and show "thinking" badge
+    // TokenWise: estimate input from request body only (no system prompt in client)
     const requestBody = JSON.stringify({ brandToken: token, mediaId, format, platforms, customPrompt: customPrompt || undefined });
-    setAiInputChars(requestBody.length + 500); // ~500 chars for system prompt
+    setAiInputChars(requestBody.length);
     setAiCostStatus('thinking');
 
     try {
@@ -142,10 +143,11 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
       const data = await res.json();
       setDrafts(data.drafts || data);
 
-      // TokenWise: use real token counts from API if available, otherwise estimate
+      // TokenWise: use real token counts and model from API (server-only, not in client bundle)
       if (data.aiUsage) {
         setAiInputChars(data.aiUsage.inputTokens * 3.5);
         setAiOutputChars(data.aiUsage.outputTokens * 3.5);
+        setAiModel(data.aiUsage.model ?? 'AI');
       } else {
         const draftsArr = data.drafts || data;
         const outputSize = draftsArr.reduce((sum: number, d: Draft) => sum + d.caption.length + d.hashtags.join(' ').length, 0);
@@ -385,7 +387,7 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
 
             {aiCostStatus !== 'idle' && (
               <div className="flex justify-center pt-1">
-                <TokenWiseBadge status={aiCostStatus} inputChars={aiInputChars} outputChars={aiOutputChars} model="claude-haiku-4" />
+                <TokenWiseBadge status={aiCostStatus} inputChars={aiInputChars} outputChars={aiOutputChars} model={aiModel} />
               </div>
             )}
           </div>
@@ -399,7 +401,7 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
                 {isHe ? 'בחרו סגנון' : 'Pick your style'}
               </h2>
               {aiCostStatus === 'done' && (
-                <TokenWiseBadge status="done" inputChars={aiInputChars} outputChars={aiOutputChars} model="claude-haiku-4" />
+                <TokenWiseBadge status="done" inputChars={aiInputChars} outputChars={aiOutputChars} model={aiModel} />
               )}
             </div>
 

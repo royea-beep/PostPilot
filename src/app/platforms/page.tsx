@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth } from '@royea/shared-utils/auth-context';
 import { PlatformConnect } from '@/components/PlatformConnect';
 import { Rocket, ArrowLeft, Plug, ChevronDown } from 'lucide-react';
 

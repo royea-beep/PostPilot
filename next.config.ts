@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  transpilePackages: ['@royea/shared-utils', '@royea/prompt-guard', '@royea/flush-queue', '@royea/url-guard'],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**.fbcdn.net" },

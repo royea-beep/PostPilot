@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { withAuth } from '@/lib/auth-guard';
+import { withAuth } from '@royea/shared-utils/auth-guard';
+
+type RouteContext = { params: Promise<{ id: string }> };
 
 // GET /api/brands/:id — full brand detail for agency
-export const GET = withAuth(async (req: NextRequest, userId: string) => {
+export const GET = withAuth((async (req: NextRequest, userId: string) => {
   const id = req.nextUrl.pathname.split('/')[3];
 
   const brand = await prisma.brand.findFirst({
@@ -41,10 +43,10 @@ export const GET = withAuth(async (req: NextRequest, userId: string) => {
     posts,
     media,
   });
-});
+}) as unknown as import('@royea/shared-utils/auth-guard').AuthRouteHandler) as unknown as (req: NextRequest, context: RouteContext) => Promise<NextResponse>;
 
 // DELETE /api/brands/:id — delete a brand
-export const DELETE = withAuth(async (req: NextRequest, userId: string) => {
+export const DELETE = withAuth((async (req: NextRequest, userId: string) => {
   const id = req.nextUrl.pathname.split('/')[3];
 
   const brand = await prisma.brand.findFirst({ where: { id, userId } });
@@ -53,4 +55,4 @@ export const DELETE = withAuth(async (req: NextRequest, userId: string) => {
   await prisma.brand.delete({ where: { id } });
 
   return NextResponse.json({ deleted: true });
-});
+}) as unknown as import('@royea/shared-utils/auth-guard').AuthRouteHandler) as unknown as (req: NextRequest, context: RouteContext) => Promise<NextResponse>;

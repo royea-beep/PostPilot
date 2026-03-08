@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth } from '@royea/shared-utils/auth-context';
 import { Rocket, Plus, Copy, Check, ExternalLink, LogOut, Users, ImageIcon, BarChart3, Sparkles, CreditCard } from 'lucide-react';
 
 interface Brand {

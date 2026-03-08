@@ -1,5 +1,7 @@
 // AI Caption Generator — generates 3 style-matched caption options
 
+import { sanitizeForLlm } from '@royea/prompt-guard';
+
 interface StyleProfile {
   tone?: string | null;
   emojiStyle?: string | null;
@@ -89,10 +91,15 @@ For each option, provide:
 Respond ONLY with valid JSON array:
 [{"caption":"...","hashtags":["..."],"style":"..."},...]`;
 
+  const sanitizedPrompt = sanitizeForLlm(prompt);
+
   // If no API key, generate smart fallback options
   if (!apiKey) {
     return { options: generateFallbackCaptions(options) };
   }
+
+  const model = process.env.ANTHROPIC_CAPTION_MODEL || 'claude-haiku-4-5-20251001';
+  const maxTokens = parseInt(process.env.ANTHROPIC_CAPTION_MAX_TOKENS || '1024', 10);
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -103,9 +110,9 @@ Respond ONLY with valid JSON array:
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        messages: [{ role: 'user', content: prompt }],
+        model,
+        max_tokens: maxTokens,
+        messages: [{ role: 'user', content: sanitizedPrompt }],
       }),
     });
 
@@ -117,11 +124,11 @@ Respond ONLY with valid JSON array:
     const data = await res.json();
     const text = data.content?.[0]?.text || '';
 
-    // Extract token usage from Anthropic response
+    // Extract token usage from Anthropic response (model from env for display)
     const aiUsage = data.usage ? {
       inputTokens: data.usage.input_tokens as number,
       outputTokens: data.usage.output_tokens as number,
-      model: 'claude-haiku-4',
+      model,
     } : undefined;
 
     // Extract JSON from response

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'node:crypto';
-import { extractBearerToken, verifyAccessToken } from '@/lib/auth';
+import { extractBearerToken, verifyAccessToken } from '@royea/shared-utils/auth';
 import { prisma } from '@/lib/db';
 import { buildAuthUrl, type PlatformKey } from '@/lib/platforms';
 

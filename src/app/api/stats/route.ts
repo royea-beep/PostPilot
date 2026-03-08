@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { withAuth } from '@/lib/auth-guard';
+import { withAuth } from '@royea/shared-utils/auth-guard';
+
+type RouteContext = { params: Promise<Record<string, never>> };
 
 // GET /api/stats — aggregate counts across all brands for the authenticated user
-export const GET = withAuth(async (_req: NextRequest, userId: string) => {
+export const GET = withAuth((async (_req: NextRequest, userId: string) => {
   const brands = await prisma.brand.findMany({
     where: { userId },
     select: {
@@ -16,4 +18,4 @@ export const GET = withAuth(async (_req: NextRequest, userId: string) => {
   const totalMedia = brands.reduce((sum, b) => sum + b._count.mediaUploads, 0);
 
   return NextResponse.json({ totalBrands, totalPosts, totalMedia });
-});
+}) as unknown as import('@royea/shared-utils/auth-guard').AuthRouteHandler) as unknown as (req: NextRequest, _context: RouteContext) => Promise<NextResponse>;
