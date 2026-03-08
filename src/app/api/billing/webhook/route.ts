@@ -15,13 +15,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
   }
 
-  const sig = req.headers.get('x-signature');
-  if (!sig) {
+  const sigHeader = req.headers.get('x-signature');
+  if (!sigHeader) {
     return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
   }
 
-  const hmac = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-  if (hmac !== sig) {
+  // HMAC-SHA256 with LEMONSQUEEZY_WEBHOOK_SECRET; reject invalid signature with 400
+  const expectedHex = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+  const expectedBuf = Buffer.from(expectedHex, 'hex');
+  const sigBuf = Buffer.from(sigHeader, 'hex');
+  if (expectedBuf.length !== sigBuf.length || !crypto.timingSafeEqual(expectedBuf, sigBuf)) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 

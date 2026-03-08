@@ -4,6 +4,7 @@
 
 - Connect the repo to Vercel (or your host).
 - Set **all** env vars from `.env.example` in the project’s Environment Variables. Use **Production** (and optionally Preview).
+- Set `NEXT_PUBLIC_APP_URL` to your production URL (e.g. `https://postpilot-app-nine.vercel.app`) with no trailing slash so checkout redirects and OAuth callbacks use the correct domain.
 - For **LemonSqueezy**: set `LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_STORE_ID`, `LEMONSQUEEZY_PRO_VARIANT_ID`, `LEMONSQUEEZY_AGENCY_VARIANT_ID`, `LEMONSQUEEZY_WEBHOOK_SECRET` (webhook URL: `https://your-domain.com/api/billing/webhook`).
 - For **ftable caption API**: set `POSTPILOT_FTABLE_API_KEY`; use the same value as `POSTPILOT_API_KEY` in ftable’s Supabase Edge secrets.
 

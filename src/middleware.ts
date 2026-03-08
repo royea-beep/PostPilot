@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit } from '@/lib/edge-rate-limit';
 
 const MINUTE = 60 * 1000;
 
