@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { withAuth } from '@/lib/auth-guard';
 import { createBrandSchema } from '@/lib/validation';
+import { getPlanLimits } from '@/lib/payments';
 
 // GET /api/brands — list all brands for the authenticated user
 export const GET = withAuth(async (_req: NextRequest, userId: string) => {
@@ -28,6 +29,15 @@ export const POST = withAuth(async (req: NextRequest, userId: string) => {
   try {
     const body = await req.json();
     const data = createBrandSchema.parse(body);
+
+    // Check brand limit
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { plan: true, _count: { select: { brands: true } } } });
+    if (user) {
+      const limits = getPlanLimits(user.plan);
+      if (limits.brandsLimit > 0 && user._count.brands >= limits.brandsLimit) {
+        return NextResponse.json({ error: 'Brand limit reached. Upgrade your plan.', code: 'LIMIT_REACHED' }, { status: 403 });
+      }
+    }
 
     const brand = await prisma.brand.create({
       data: {

@@ -22,7 +22,7 @@ export function CookieConsent() {
   function disableAnalytics() {
     // Disable Google Analytics if present
     if (typeof window !== 'undefined') {
-      (window as Record<string, unknown>)['ga-disable'] = true;
+      (window as unknown as Record<string, unknown>)['ga-disable'] = true;
     }
     // Remove existing GA cookies
     document.cookie.split(';').forEach((c) => {

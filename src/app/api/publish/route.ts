@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { analyzeAndUpdateStyleProfile } from '@/lib/style-engine';
+import { getPlanLimits } from '@/lib/payments';
 
 // POST /api/publish — publish a selected draft (simulated for MVP)
 export async function POST(req: NextRequest) {
@@ -10,8 +11,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing draftId or brandToken' }, { status: 400 });
     }
 
-    const brand = await prisma.brand.findUnique({ where: { token: brandToken } });
+    const brand = await prisma.brand.findUnique({ where: { token: brandToken }, include: { user: true } });
     if (!brand) return NextResponse.json({ error: 'Invalid brand token' }, { status: 404 });
+
+    // Check plan limits
+    const user = brand.user;
+    const limits = getPlanLimits(user.plan);
+    const cycleStart = new Date(user.billingCycleStart);
+    const now = new Date();
+    if (now.getTime() - cycleStart.getTime() > 30 * 24 * 60 * 60 * 1000) {
+      await prisma.user.update({ where: { id: user.id }, data: { postsThisMonth: 0, billingCycleStart: now } });
+      user.postsThisMonth = 0;
+    }
+    if (limits.postsPerMonth > 0 && user.postsThisMonth >= limits.postsPerMonth) {
+      return NextResponse.json({ error: 'Monthly post limit reached. Upgrade your plan.', code: 'LIMIT_REACHED' }, { status: 403 });
+    }
 
     const draft = await prisma.postDraft.findFirst({
       where: { id: draftId, brandId: brand.id },
@@ -53,6 +67,15 @@ export async function POST(req: NextRequest) {
         });
       })
     );
+
+    // Increment monthly usage counter
+    const postCount = posts.filter(Boolean).length;
+    if (postCount > 0) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { postsThisMonth: { increment: postCount } },
+      });
+    }
 
     // Update Style DNA in background (don't block the response)
     analyzeAndUpdateStyleProfile(brand.id).catch(err =>

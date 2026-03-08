@@ -17,6 +17,15 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // Billing
+  plan               String   @default("FREE")
+  lsCustomerId       String?  @unique @map("ls_customer_id")
+  lsSubscriptionId   String?  @map("ls_subscription_id")
+  subscriptionStatus String   @default("INACTIVE") @map("subscription_status")
+  currentPeriodEnd   DateTime? @map("current_period_end")
+  postsThisMonth     Int      @default(0) @map("posts_this_month")
+  billingCycleStart  DateTime @default(now()) @map("billing_cycle_start")
+
   brands        Brand[]
   refreshTokens RefreshToken[]
 }
