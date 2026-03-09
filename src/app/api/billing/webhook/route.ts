@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
 
   if (!secret) {
-    console.error('LEMONSQUEEZY_WEBHOOK_SECRET not set');
+    console.error('Webhook secret not configured');
     return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
   }
 
@@ -91,8 +91,10 @@ export async function POST(req: NextRequest) {
         break;
       }
     }
-  } catch (err) {
-    console.error('Webhook handler error:', err);
+  } catch {
+    const eventId = payload?.data?.id;
+    const eventType = eventName ?? 'unknown';
+    console.error(`Webhook handler failed: event=${eventType} id=${eventId ?? 'n/a'}`);
     return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 });
   }
 

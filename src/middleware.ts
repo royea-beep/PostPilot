@@ -12,7 +12,7 @@ const rateLimitRules: { pattern: RegExp; limit: number; windowMs: number }[] = [
 
 export function middleware(request: NextRequest) {
   const ip =
-    request.headers.get('x-forwarded-for') || 'unknown';
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
   const pathname = request.nextUrl.pathname;
 
   for (const rule of rateLimitRules) {

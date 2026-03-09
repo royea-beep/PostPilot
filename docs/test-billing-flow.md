@@ -70,6 +70,7 @@ This document describes the full E2E flow to test registration, login, billing (
 
 - Use LemonSqueezy test card (e.g. **4242 4242 4242 4242**).
 - Complete payment. You will be redirected to `NEXT_PUBLIC_APP_URL/dashboard?upgraded=true`.
+- In production the redirect is e.g. https://postpilot-app-nine.vercel.app/dashboard?upgraded=true
 
 ---
 
