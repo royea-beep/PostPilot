@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import crypto from 'crypto';
+import { emitServerEvent } from '@/lib/learning';
 
 /**
  * LemonSqueezy webhook handler for PostPilot.
@@ -48,6 +49,11 @@ export async function POST(req: NextRequest) {
     switch (eventName) {
       case 'subscription_created': {
         const plan = customData?.plan || 'PRO';
+
+        // Determine previous plan for learning hook
+        const existingUser = await prisma.user.findUnique({ where: { id: userId }, select: { plan: true } });
+        const fromPlan = existingUser?.plan || 'FREE';
+
         await prisma.user.update({
           where: { id: userId },
           data: {
@@ -58,6 +64,9 @@ export async function POST(req: NextRequest) {
             currentPeriodEnd: attrs.renews_at ? new Date(attrs.renews_at) : null,
           },
         });
+
+        // Learning hook: planUpgraded
+        emitServerEvent('plan_upgraded', 'billing', undefined, { fromPlan, toPlan: plan });
         break;
       }
 

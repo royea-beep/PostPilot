@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { encrypt } from '@/lib/crypto';
 import { exchangeCodeForToken, type PlatformKey } from '@/lib/platforms';
+import { emitServerEvent } from '@/lib/learning';
 
 const VALID_PLATFORMS = new Set<string>(['instagram', 'facebook', 'tiktok']);
 
@@ -138,6 +139,9 @@ export async function GET(
         }),
       },
     });
+
+    // Learning hook: platformConnected
+    emitServerEvent('platform_connected', 'onboarding', undefined, { platform });
 
     // Redirect back to the platforms page with success
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';

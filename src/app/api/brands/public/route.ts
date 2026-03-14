@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       language: true,
       industry: true,
       socialConnections: {
-        where: { status: 'CONNECTED' },
+        where: { status: { in: ['ACTIVE', 'CONNECTED'] } },
         select: { platform: true },
       },
     },

@@ -41,9 +41,7 @@ export interface TokenResponse {
 // ---------------------------------------------------------------------------
 
 function env(key: string): string {
-  const v = process.env[key];
-  if (!v) throw new Error(`Missing environment variable: ${key}`);
-  return v;
+  return process.env[key] || '';
 }
 
 function appUrl(): string {
@@ -134,6 +132,16 @@ export function getPlatformConfig(platform: PlatformKey): PlatformConfig {
 
 export function getAllPlatformKeys(): PlatformKey[] {
   return ['instagram', 'facebook', 'tiktok'];
+}
+
+/** Returns true if the platform has its OAuth credentials configured. */
+export function isPlatformConfigured(platform: PlatformKey): boolean {
+  try {
+    const cfg = getPlatformConfig(platform);
+    return !!(cfg.clientId && cfg.clientSecret);
+  } catch {
+    return false;
+  }
 }
 
 /** Platform metadata safe for the client (no secrets). */

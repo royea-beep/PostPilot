@@ -1,0 +1,19 @@
+{
+  "name": "@royea/url-guard",
+  "version": "1.0.0",
+  "description": "SSRF-safe URL validation for Node/Next/Edge — thin wrapper around @royea/shared-utils",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@royea/shared-utils": "file:../shared-utils"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}

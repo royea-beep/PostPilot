@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { withAuth } from '@royea/shared-utils/auth-guard';
 import { createBrandSchema } from '@/lib/validation';
 import { getPlanLimits } from '@/lib/payments';
+import { emitServerEvent } from '@/lib/learning';
 
 type RouteContext = { params: Promise<Record<string, never>> };
 
@@ -52,6 +53,9 @@ export const POST = withAuth((async (req: NextRequest, userId: string) => {
       },
       include: { socialConnections: true },
     });
+
+    // Learning hook: brandCreated
+    emitServerEvent('brand_created', 'onboarding', undefined, { brandName: brand.name });
 
     return NextResponse.json({
       ...brand,

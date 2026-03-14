@@ -33,23 +33,32 @@ export const GET = withAuth((async (req: NextRequest, userId: string) => {
       platformUserId: true,
       accountName: true,
       accountAvatar: true,
+      accountType: true,
+      pageId: true,
+      pageName: true,
       status: true,
       scopes: true,
       tokenExpiresAt: true,
+      lastSyncAt: true,
       createdAt: true,
       updatedAt: true,
     },
     orderBy: { createdAt: 'asc' },
   });
 
-  // Enrich with expiry status
-  const enriched = connections.map((c) => ({
-    ...c,
-    isExpired: c.tokenExpiresAt ? new Date(c.tokenExpiresAt) < new Date() : false,
-    expiresIn: c.tokenExpiresAt
-      ? Math.max(0, Math.floor((new Date(c.tokenExpiresAt).getTime() - Date.now()) / 1000))
-      : null,
-  }));
+  // Enrich with expiry status and page selection state
+  const enriched = connections.map((c) => {
+    const isMeta = c.platform === 'instagram' || c.platform === 'facebook';
+    const needsPageSelection = isMeta && c.status === 'CONNECTED' && !c.pageId;
+    return {
+      ...c,
+      isExpired: c.tokenExpiresAt ? new Date(c.tokenExpiresAt) < new Date() : false,
+      expiresIn: c.tokenExpiresAt
+        ? Math.max(0, Math.floor((new Date(c.tokenExpiresAt).getTime() - Date.now()) / 1000))
+        : null,
+      needsPageSelection,
+    };
+  });
 
   return NextResponse.json(enriched);
 }) as unknown as import('@royea/shared-utils/auth-guard').AuthRouteHandler) as unknown as (req: NextRequest, _context: RouteContext) => Promise<NextResponse>;
@@ -84,16 +93,21 @@ export const DELETE = withAuth((async (req: NextRequest, userId: string) => {
     return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
   }
 
-  // Update to REVOKED status and clear tokens
+  // Update to DISCONNECTED status and clear all tokens
   await prisma.socialConnection.update({
     where: { id: connection.id },
     data: {
-      status: 'REVOKED',
+      status: 'DISCONNECTED',
       encryptedAccessToken: null,
       encryptedRefreshToken: null,
       iv: null,
       authTag: null,
       tokenExpiresAt: null,
+      pageId: null,
+      pageName: null,
+      pageAccessTokenEncrypted: null,
+      pageTokenIv: null,
+      pageTokenAuthTag: null,
     },
   });
 

@@ -26,6 +26,11 @@ interface PostRecord {
   format: string;
   platform: string;
   status: string;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  platformPostId?: string | null;
+  platformUrl?: string | null;
+  retryCount?: number;
   publishedAt?: string | null;
   createdAt: string;
   media: { id: string; filename: string; mediaType: string };
@@ -63,7 +68,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      className="flex items-center gap-1.5 text-sm text-violet-600 hover:text-violet-700 font-medium px-3 py-1.5 rounded-lg hover:bg-violet-50 transition-colors"
+      className="flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-500/10 transition-colors"
     >
       {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
       {copied ? 'Copied!' : 'Copy Client Link'}
@@ -82,9 +87,9 @@ function formatBytes(bytes: number) {
 }
 
 const PLATFORM_COLORS: Record<string, string> = {
-  instagram: 'bg-pink-100 text-pink-700',
-  facebook: 'bg-blue-100 text-blue-700',
-  tiktok: 'bg-gray-900 text-white',
+  instagram: 'bg-pink-500/10 text-pink-400',
+  facebook: 'bg-blue-500/10 text-blue-400',
+  tiktok: 'bg-white/10 text-white',
 };
 
 export default function BrandDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -136,7 +141,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   if (authLoading || loading || !user) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-violet-600" /></div>;
+    return <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-400" /></div>;
   }
 
   if (!brand) return null;
@@ -144,20 +149,20 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
   const sp = brand.styleProfile;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#0a0a0a]">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <header className="bg-[#111] border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
+          <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2 text-[#9ca3af] hover:text-[#e5e5e5] transition-colors">
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm font-medium">Dashboard</span>
           </button>
           <div className="flex items-center gap-2">
             <CopyButton text={brand.link} />
-            <a href={brand.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
+            <a href={brand.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-[#9ca3af] hover:text-[#e5e5e5] px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors">
               <ExternalLink className="w-4 h-4" /> Open
             </a>
-            <button onClick={handleDelete} disabled={deleting} className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">
+            <button onClick={handleDelete} disabled={deleting} className="flex items-center gap-1.5 text-sm text-[#ef4444] hover:text-red-300 px-3 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors">
               <Trash2 className="w-4 h-4" /> {deleting ? 'Deleting...' : 'Delete'}
             </button>
           </div>
@@ -166,11 +171,11 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
 
       <main className="max-w-5xl mx-auto px-4 py-6 animate-fade-in">
         {/* Brand Info */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <div className="bg-[#111] rounded-xl border border-white/10 p-6 mb-6">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{brand.name}</h1>
-              <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
+              <h1 className="text-2xl font-bold text-[#e5e5e5]">{brand.name}</h1>
+              <div className="flex items-center gap-3 mt-2 text-sm text-[#9ca3af]">
                 {brand.industry && <span>{brand.industry}</span>}
                 <span className="flex items-center gap-1"><Globe className="w-3.5 h-3.5" />{brand.language === 'he' ? 'Hebrew' : 'English'}</span>
                 <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />Created {formatDate(brand.createdAt)}</span>
@@ -178,41 +183,41 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
             </div>
             <div className="flex gap-6 text-center">
               <div>
-                <p className="text-2xl font-bold text-violet-600">{brand._count.posts}</p>
-                <p className="text-xs text-gray-500">Posts</p>
+                <p className="text-2xl font-bold text-blue-400">{brand._count.posts}</p>
+                <p className="text-xs text-[#9ca3af]">Posts</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-violet-600">{brand._count.mediaUploads}</p>
-                <p className="text-xs text-gray-500">Media</p>
+                <p className="text-2xl font-bold text-blue-400">{brand._count.mediaUploads}</p>
+                <p className="text-xs text-[#9ca3af]">Media</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-violet-600">{brand._count.postDrafts}</p>
-                <p className="text-xs text-gray-500">Drafts</p>
+                <p className="text-2xl font-bold text-blue-400">{brand._count.postDrafts}</p>
+                <p className="text-xs text-[#9ca3af]">Drafts</p>
               </div>
             </div>
           </div>
 
           {/* Connected platforms */}
           <div className="flex flex-wrap gap-2 mt-4">
-            {brand.socialConnections.filter(c => c.status === 'CONNECTED').map((conn) => (
-              <span key={conn.id} className={`text-xs font-medium px-3 py-1 rounded-full ${PLATFORM_COLORS[conn.platform] || 'bg-gray-100 text-gray-600'}`}>
+            {brand.socialConnections.filter(c => c.status === 'ACTIVE' || c.status === 'CONNECTED').map((conn) => (
+              <span key={conn.id} className={`text-xs font-medium px-3 py-1 rounded-full ${PLATFORM_COLORS[conn.platform] || 'bg-white/5 text-[#9ca3af]'}`}>
                 {conn.accountName || conn.platform}
               </span>
             ))}
-            {brand.socialConnections.filter(c => c.status === 'CONNECTED').length === 0 && (
-              <span className="text-sm text-gray-400">No social accounts connected yet</span>
+            {brand.socialConnections.filter(c => c.status === 'ACTIVE' || c.status === 'CONNECTED').length === 0 && (
+              <span className="text-sm text-[#9ca3af]/50">No social accounts connected yet</span>
             )}
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-4 bg-white rounded-lg border border-gray-200 p-1 w-fit">
+        <div className="flex gap-1 mb-4 bg-[#111] rounded-lg border border-white/10 p-1 w-fit">
           {(['posts', 'media', 'style'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                tab === t ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                tab === t ? 'bg-blue-600/20 text-blue-400' : 'text-[#9ca3af] hover:text-[#e5e5e5] hover:bg-white/5'
               }`}
             >
               {t === 'posts' ? 'Posts' : t === 'media' ? 'Media' : 'Style DNA'}
@@ -224,40 +229,58 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
         {tab === 'posts' && (
           <div className="space-y-3">
             {brand.posts.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                <p className="text-gray-400">No posts published yet</p>
+              <div className="bg-[#111] rounded-xl border border-white/10 p-12 text-center">
+                <p className="text-[#9ca3af]/50">No posts published yet</p>
               </div>
             ) : (
               brand.posts.map((post) => {
                 let hashtags: string[] = [];
                 try { hashtags = JSON.parse(post.hashtags); } catch { /* ignore */ }
+                const statusColor = post.status === 'SUCCESS' || post.status === 'PUBLISHED'
+                  ? 'bg-[#22c55e]/10 text-[#22c55e]'
+                  : post.status === 'FAILED'
+                  ? 'bg-[#ef4444]/10 text-[#ef4444]'
+                  : post.status === 'PROCESSING'
+                  ? 'bg-blue-500/10 text-blue-400'
+                  : 'bg-[#f59e0b]/10 text-[#f59e0b]';
                 return (
-                  <div key={post.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div key={post.id} className={`bg-[#111] rounded-xl border p-4 ${post.status === 'FAILED' ? 'border-[#ef4444]/30' : 'border-white/10'}`}>
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${PLATFORM_COLORS[post.platform] || 'bg-gray-100 text-gray-600'}`}>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${PLATFORM_COLORS[post.platform] || 'bg-white/5 text-[#9ca3af]'}`}>
                           {post.platform}
                         </span>
-                        <span className="text-xs text-gray-400">{post.format}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          post.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                        }`}>
+                        <span className="text-xs text-[#9ca3af]/60">{post.format}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor}`}>
                           {post.status.toLowerCase()}
                         </span>
                       </div>
-                      <span className="text-xs text-gray-400">
-                        {post.publishedAt ? formatDate(post.publishedAt) : formatDate(post.createdAt)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {post.platformUrl && (
+                          <a href={post.platformUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                            <ExternalLink className="w-3 h-3" /> View
+                          </a>
+                        )}
+                        <span className="text-xs text-[#9ca3af]/50">
+                          {post.publishedAt ? formatDate(post.publishedAt) : formatDate(post.createdAt)}
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-800 leading-relaxed mb-2">{post.caption}</p>
+                    <p className="text-sm text-[#e5e5e5]/80 leading-relaxed mb-2">{post.caption}</p>
+                    {post.status === 'FAILED' && post.errorMessage && (
+                      <div className="bg-[#ef4444]/10 rounded-lg p-2 mb-2 text-xs text-[#ef4444]">
+                        <span className="font-medium">{post.errorCode || 'Error'}:</span> {post.errorMessage}
+                        {(post.retryCount ?? 0) > 0 && <span className="text-[#ef4444]/60 ml-2">({post.retryCount} retries)</span>}
+                      </div>
+                    )}
                     {hashtags.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {hashtags.map((tag, i) => (
-                          <span key={i} className="text-xs text-violet-500">#{tag}</span>
+                          <span key={i} className="text-xs text-blue-400/70">#{tag}</span>
                         ))}
                       </div>
                     )}
-                    <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400">
+                    <div className="flex items-center gap-1.5 mt-2 text-xs text-[#9ca3af]/50">
                       {post.media.mediaType === 'video' ? <Video className="w-3 h-3" /> : <ImageIcon className="w-3 h-3" />}
                       {post.media.filename}
                     </div>
@@ -272,23 +295,23 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
         {tab === 'media' && (
           <div className="space-y-3">
             {brand.media.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                <p className="text-gray-400">No media uploaded yet</p>
+              <div className="bg-[#111] rounded-xl border border-white/10 p-12 text-center">
+                <p className="text-[#9ca3af]/50">No media uploaded yet</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {brand.media.map((m) => (
-                  <div key={m.id} className="bg-white rounded-xl border border-gray-200 p-3">
-                    <div className="w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center mb-2">
+                  <div key={m.id} className="bg-[#111] rounded-xl border border-white/10 p-3">
+                    <div className="w-full aspect-square bg-[#0a0a0a] rounded-lg flex items-center justify-center mb-2">
                       {m.mediaType === 'video' ? (
-                        <Video className="w-8 h-8 text-gray-400" />
+                        <Video className="w-8 h-8 text-[#9ca3af]/30" />
                       ) : (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={`/api/media/${m.id}`} alt={m.filename} className="w-full h-full object-cover rounded-lg" />
                       )}
                     </div>
-                    <p className="text-xs text-gray-700 truncate">{m.filename}</p>
-                    <p className="text-xs text-gray-400">{formatBytes(m.sizeBytes)}</p>
+                    <p className="text-xs text-[#e5e5e5]/70 truncate">{m.filename}</p>
+                    <p className="text-xs text-[#9ca3af]/50">{formatBytes(m.sizeBytes)}</p>
                   </div>
                 ))}
               </div>
@@ -298,20 +321,20 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Style DNA Tab */}
         {tab === 'style' && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-[#111] rounded-xl border border-white/10 p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-violet-600" /> Style DNA
+                <h2 className="text-lg font-semibold text-[#e5e5e5] flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-blue-400" /> Style DNA
                 </h2>
                 {sp?.lastAnalyzedAt && (
-                  <p className="text-xs text-gray-400 mt-1">Last analyzed {formatDate(sp.lastAnalyzedAt)} ({sp.analyzedPostCount} posts)</p>
+                  <p className="text-xs text-[#9ca3af]/60 mt-1">Last analyzed {formatDate(sp.lastAnalyzedAt)} ({sp.analyzedPostCount} posts)</p>
                 )}
               </div>
               <button
                 onClick={handleAnalyze}
                 disabled={analyzing}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 text-white text-sm font-medium transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white text-sm font-medium transition-colors"
               >
                 {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 {analyzing ? 'Analyzing...' : 'Analyze Now'}
@@ -320,26 +343,26 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
 
             {!sp || sp.analyzedPostCount === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-400 mb-2">No style data yet</p>
-                <p className="text-sm text-gray-500">Publish posts first, then analyze to learn the brand&apos;s voice.</p>
+                <p className="text-[#9ca3af]/50 mb-2">No style data yet</p>
+                <p className="text-sm text-[#9ca3af]">Publish posts first, then analyze to learn the brand&apos;s voice.</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-xs text-gray-500 mb-1">Tone</p>
-                  <p className="font-semibold text-gray-900 capitalize">{sp.tone || '—'}</p>
+                <div className="bg-[#0a0a0a] rounded-lg p-4 border border-white/5">
+                  <p className="text-xs text-[#9ca3af] mb-1">Tone</p>
+                  <p className="font-semibold text-[#e5e5e5] capitalize">{sp.tone || '—'}</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-xs text-gray-500 mb-1">Emoji Usage</p>
-                  <p className="font-semibold text-gray-900 capitalize">{sp.emojiStyle || '—'}</p>
+                <div className="bg-[#0a0a0a] rounded-lg p-4 border border-white/5">
+                  <p className="text-xs text-[#9ca3af] mb-1">Emoji Usage</p>
+                  <p className="font-semibold text-[#e5e5e5] capitalize">{sp.emojiStyle || '—'}</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-xs text-gray-500 mb-1">Hashtag Style</p>
-                  <p className="font-semibold text-gray-900 capitalize">{sp.hashtagStyle || '—'}</p>
+                <div className="bg-[#0a0a0a] rounded-lg p-4 border border-white/5">
+                  <p className="text-xs text-[#9ca3af] mb-1">Hashtag Style</p>
+                  <p className="font-semibold text-[#e5e5e5] capitalize">{sp.hashtagStyle || '—'}</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-xs text-gray-500 mb-1">Caption Length</p>
-                  <p className="font-semibold text-gray-900 capitalize">{sp.captionLength || '—'}</p>
+                <div className="bg-[#0a0a0a] rounded-lg p-4 border border-white/5">
+                  <p className="text-xs text-[#9ca3af] mb-1">Caption Length</p>
+                  <p className="font-semibold text-[#e5e5e5] capitalize">{sp.captionLength || '—'}</p>
                 </div>
 
                 {sp.favoriteEmojis && (() => {
@@ -347,8 +370,8 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
                     const emojis = JSON.parse(sp.favoriteEmojis) as string[];
                     if (emojis.length === 0) return null;
                     return (
-                      <div className="bg-gray-50 rounded-lg p-4 col-span-2">
-                        <p className="text-xs text-gray-500 mb-1">Favorite Emojis</p>
+                      <div className="bg-[#0a0a0a] rounded-lg p-4 col-span-2 border border-white/5">
+                        <p className="text-xs text-[#9ca3af] mb-1">Favorite Emojis</p>
                         <p className="text-2xl">{emojis.join(' ')}</p>
                       </div>
                     );
@@ -360,11 +383,11 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
                     const tags = JSON.parse(sp.favoriteHashtags) as string[];
                     if (tags.length === 0) return null;
                     return (
-                      <div className="bg-gray-50 rounded-lg p-4 col-span-2">
-                        <p className="text-xs text-gray-500 mb-2">Top Hashtags</p>
+                      <div className="bg-[#0a0a0a] rounded-lg p-4 col-span-2 border border-white/5">
+                        <p className="text-xs text-[#9ca3af] mb-2">Top Hashtags</p>
                         <div className="flex flex-wrap gap-1.5">
                           {tags.map((tag, i) => (
-                            <span key={i} className="flex items-center gap-0.5 text-xs bg-violet-100 text-violet-700 px-2 py-1 rounded-full">
+                            <span key={i} className="flex items-center gap-0.5 text-xs bg-blue-500/10 text-blue-400 px-2 py-1 rounded-full">
                               <Hash className="w-3 h-3" />{tag}
                             </span>
                           ))}

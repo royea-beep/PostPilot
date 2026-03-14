@@ -7,6 +7,10 @@ interface StyleProfile {
   emojiStyle?: string | null;
   hashtagStyle?: string | null;
   captionLength?: string | null;
+  ctaStyle?: string | null;
+  languageMix?: string | null;
+  preferredOpeners?: string | null;
+  preferredClosers?: string | null;
   favoriteEmojis?: string | null;
   favoriteHashtags?: string | null;
   sampleCaptions?: string | null;
@@ -47,6 +51,20 @@ function buildStyleContext(profile: StyleProfile | null | undefined): string {
   }
   if (profile.favoriteHashtags) {
     try { parts.push(`Go-to hashtags: ${JSON.parse(profile.favoriteHashtags).join(', ')}`); } catch { /* skip */ }
+  }
+  if (profile.ctaStyle) parts.push(`CTA style: ${profile.ctaStyle}`);
+  if (profile.languageMix) parts.push(`Language mix: ${profile.languageMix}`);
+  if (profile.preferredOpeners) {
+    try {
+      const openers = JSON.parse(profile.preferredOpeners) as string[];
+      if (openers.length > 0) parts.push(`Common openers: ${openers.slice(0, 3).map(o => `"${o}"`).join(', ')}`);
+    } catch { /* skip */ }
+  }
+  if (profile.preferredClosers) {
+    try {
+      const closers = JSON.parse(profile.preferredClosers) as string[];
+      if (closers.length > 0) parts.push(`Common closers: ${closers.slice(0, 3).map(c => `"${c}"`).join(', ')}`);
+    } catch { /* skip */ }
   }
   if (profile.sampleCaptions) {
     try {

@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -63,6 +63,7 @@ model Brand {
 
   socialConnections SocialConnection[]
   styleProfile      StyleProfile?
+  styleEvents       StyleEvent[]
   mediaUploads      MediaUpload[]
   posts             Post[]
   postDrafts        PostDraft[]
@@ -77,12 +78,13 @@ model SocialConnection {
   brandId   String
   brand     Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
-  platform       String   // instagram, facebook, tiktok, twitter
-  platformUserId String?
+  platform       String   // instagram, facebook, tiktok
+  platformUserId String?  // User-level ID from OAuth
   accountName    String?
   accountAvatar  String?
+  accountType    String?  // page, business, creator
 
-  // Encrypted OAuth tokens
+  // Encrypted OAuth tokens (user-level)
   encryptedAccessToken  String?
   encryptedRefreshToken String?
   iv                    String?
@@ -90,9 +92,18 @@ model SocialConnection {
   tokenExpiresAt        DateTime?
   scopes                String?
 
-  status    String   @default("PENDING") // PENDING, CONNECTED, EXPIRED, REVOKED
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // Selected Page/Account for publishing (Meta)
+  pageId                     String?  // Facebook Page ID or IG Business Account ID
+  pageName                   String?  // Display name of selected page
+  pageAccessTokenEncrypted   String?  // Encrypted Page Access Token
+  pageTokenIv                String?
+  pageTokenAuthTag           String?
+
+  metadata   String?  // JSON: extra platform-specific data
+  status     String   @default("PENDING") // ACTIVE, EXPIRED, DISCONNECTED, ERROR
+  lastSyncAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   posts Post[]
 
@@ -106,15 +117,21 @@ model StyleProfile {
   brandId String @unique
   brand   Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
-  // Style DNA (JSON)
-  tone           String? // casual, professional, playful, etc.
-  emojiStyle     String? // heavy, moderate, none
-  hashtagStyle   String? // many (10+), moderate (3-5), minimal (1-2), none
-  captionLength  String? // short (<50), medium (50-150), long (150+)
-  favoriteEmojis String? // JSON array of most-used emojis
+  // Style DNA
+  tone             String? // casual, professional, playful, etc.
+  emojiStyle       String? // heavy, moderate, none
+  hashtagStyle     String? // many (10+), moderate (3-5), minimal (1-2), none
+  captionLength    String? // short (<50), medium (50-150), long (150+)
+  favoriteEmojis   String? // JSON array of most-used emojis
   favoriteHashtags String? // JSON array of go-to hashtags
-  sampleCaptions String? // JSON array of past captions for AI context
-  postingPatterns String? // JSON: best times, frequency, etc.
+  sampleCaptions   String? // JSON array of past captions for AI context
+  postingPatterns  String? // JSON: best times, frequency, etc.
+
+  // Extended style signals
+  ctaStyle          String? // none, soft, direct
+  languageMix       String? // hebrew_only, english_only, mixed
+  preferredOpeners  String? // JSON array of common opening patterns
+  preferredClosers  String? // JSON array of common closing patterns
 
   analyzedPostCount Int      @default(0)
   lastAnalyzedAt    DateTime?
@@ -163,10 +180,12 @@ model PostDraft {
   optionIndex Int      // 1, 2, or 3
 
   // Selection
-  selected  Boolean  @default(false)
-  createdAt DateTime @default(now())
+  selected       Boolean   @default(false)
+  editedCaption  String?   // User's manually edited version of the caption
+  chosenAt       DateTime? // When user selected this draft
+  createdAt      DateTime  @default(now())
 
-  post Post?
+  posts Post[]
 
   @@index([brandId])
   @@index([mediaId])
@@ -179,7 +198,7 @@ model Post {
   brand     Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
   mediaId   String
   media     MediaUpload @relation(fields: [mediaId], references: [id], onDelete: Cascade)
-  draftId   String? @unique
+  draftId   String?
   draft     PostDraft? @relation(fields: [draftId], references: [id])
   connectionId String
   connection   SocialConnection @relation(fields: [connectionId], references: [id])
@@ -193,8 +212,11 @@ model Post {
   // Platform response
   platformPostId String?
   platformUrl    String?
-  status         String   @default("PENDING") // PENDING, PUBLISHING, PUBLISHED, FAILED
+  status         String   @default("QUEUED") // QUEUED, PROCESSING, SUCCESS, FAILED
+  errorCode      String?  // Normalized error code (e.g. TOKEN_EXPIRED, RATE_LIMITED)
   errorMessage   String?
+  rawResponse    String?  // Full API response JSON for debugging
+  retryCount     Int      @default(0)
 
   // Scheduling
   scheduledFor DateTime?
@@ -218,6 +240,26 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([brandId])
+}
+
+// Style learning events — tracks generation inputs/outputs, user choices, edits
+model StyleEvent {
+  id        String @id @default(cuid())
+  brandId   String
+  brand     Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  eventType          String  // GENERATION, SELECTION, EDIT, PUBLISH
+  contentItemId      String? // mediaId reference
+  generatedCaptions  String? // JSON: all 3 generated options
+  chosenVariantIndex Int?    // Which option (1-3) the user picked
+  chosenCaption      String? // The caption as chosen
+  finalCaption       String? // The caption after user edits (if different)
+  detectedPatterns   String? // JSON: extracted style signals from this event
+  source             String? // ai, manual, template
+  createdAt          DateTime @default(now())
+
+  @@index([brandId])
+  @@index([eventType])
 }
 
 // Client analytics events (batch from flush-queue)

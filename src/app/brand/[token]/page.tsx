@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, use } from 'react';
-import { Upload, Camera, Instagram, Facebook, Play, Check, Loader2, Sparkles, Image as ImageIcon, Video, ArrowRight, ChevronLeft } from 'lucide-react';
+import { Upload, Camera, Instagram, Facebook, Play, Check, Loader2, Sparkles, Image as ImageIcon, Video, ArrowRight, ChevronLeft, AlertCircle, ExternalLink, Pencil, X, Copy, Send } from 'lucide-react';
 import { TokenWiseBadge } from '@royea/tokenwise/badge-react';
+import CopyPostModal from '@/components/CopyPostModal';
 
 interface BrandInfo {
   name: string;
@@ -17,6 +18,16 @@ interface Draft {
   style: string;
   format: string;
   optionIndex: number;
+}
+
+interface PublishJobResult {
+  postId: string;
+  platform: string;
+  success: boolean;
+  platformPostId?: string;
+  platformUrl?: string;
+  errorCode?: string;
+  errorMessage?: string;
 }
 
 type Step = 'upload' | 'format' | 'captions' | 'publishing' | 'done';
@@ -55,12 +66,16 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
   // Caption state
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [selectedDraft, setSelectedDraft] = useState<string | null>(null);
+  const [editedCaption, setEditedCaption] = useState<string>('');
+  const [isEditing, setIsEditing] = useState(false);
   const [generatingCaptions, setGeneratingCaptions] = useState(false);
 
   // Publish state
   const [publishing, setPublishing] = useState(false);
+  const [publishResults, setPublishResults] = useState<PublishJobResult[]>([]);
+  const [showCopyPostModal, setShowCopyPostModal] = useState(false);
 
-  // TokenWise AI cost tracking (model from API response, not in client bundle)
+  // TokenWise AI cost tracking
   const [aiCostStatus, setAiCostStatus] = useState<'idle' | 'thinking' | 'done'>('idle');
   const [aiInputChars, setAiInputChars] = useState(0);
   const [aiOutputChars, setAiOutputChars] = useState(0);
@@ -83,16 +98,25 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
     })();
   }, [token]);
 
+  // When a draft is selected, initialize editedCaption
+  useEffect(() => {
+    if (selectedDraft) {
+      const draft = drafts.find((d) => d.id === selectedDraft);
+      if (draft) {
+        setEditedCaption(draft.caption);
+        setIsEditing(false);
+      }
+    }
+  }, [selectedDraft, drafts]);
+
   const handleFileSelect = async (file: File) => {
     setUploading(true);
     setError(null);
 
-    // Preview
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
     setMediaType(file.type.startsWith('video/') ? 'video' : 'photo');
 
-    // Upload
     const form = new FormData();
     form.append('file', file);
     form.append('brandToken', token);
@@ -122,7 +146,6 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
     setGeneratingCaptions(true);
     setError(null);
 
-    // TokenWise: estimate input from request body only (no system prompt in client)
     const requestBody = JSON.stringify({ brandToken: token, mediaId, format, platforms, customPrompt: customPrompt || undefined });
     setAiInputChars(requestBody.length);
     setAiCostStatus('thinking');
@@ -143,7 +166,6 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
       const data = await res.json();
       setDrafts(data.drafts || data);
 
-      // TokenWise: use real token counts and model from API (server-only, not in client bundle)
       if (data.aiUsage) {
         setAiInputChars(data.aiUsage.inputTokens * 3.5);
         setAiOutputChars(data.aiUsage.outputTokens * 3.5);
@@ -167,26 +189,50 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
     if (!selectedDraft) return;
     setPublishing(true);
     setStep('publishing');
+    setError(null);
 
     try {
       const res = await fetch('/api/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ draftId: selectedDraft, brandToken: token }),
+        body: JSON.stringify({
+          draftId: selectedDraft,
+          brandToken: token,
+          editedCaption: isEditing || editedCaption !== drafts.find((d) => d.id === selectedDraft)?.caption
+            ? editedCaption
+            : undefined,
+        }),
       });
+
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
         setError(data.error || 'Publish failed');
         setStep('captions');
         setPublishing(false);
         return;
       }
+
+      setPublishResults(data.results || []);
       setStep('done');
     } catch {
       setError('Publish failed');
       setStep('captions');
     }
     setPublishing(false);
+  };
+
+  const resetFlow = () => {
+    setStep('upload');
+    setMediaId(null);
+    setPreviewUrl(null);
+    setDrafts([]);
+    setSelectedDraft(null);
+    setEditedCaption('');
+    setIsEditing(false);
+    setCustomPrompt('');
+    setPublishResults([]);
+    setAiCostStatus('idle');
   };
 
   if (loading) {
@@ -215,6 +261,9 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
     'minimal': { label: isHe ? 'מינימלי' : 'Minimal', color: 'bg-gray-100 text-gray-700' },
   };
 
+  const successResults = publishResults.filter((r) => r.success);
+  const failedResults = publishResults.filter((r) => !r.success);
+
   return (
     <div className="min-h-screen bg-gray-50 pb-8" dir={dir}>
       {/* Header */}
@@ -229,7 +278,10 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
 
         {/* Error */}
         {error && (
-          <div className="bg-red-50 text-red-700 text-sm rounded-xl p-3 text-center">{error}</div>
+          <div className="bg-red-50 text-red-700 text-sm rounded-xl p-3 text-center flex items-center justify-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {error}
+          </div>
         )}
 
         {/* Step 1: Upload */}
@@ -270,7 +322,7 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
                   <Upload className="w-8 h-8 text-gray-400" />
                   <div className="text-start">
                     <p className="font-medium text-gray-700">{isHe ? 'בחרו קובץ' : 'Choose file'}</p>
-                    <p className="text-xs text-gray-400">{isHe ? 'תמונה או וידאו עד 100MB' : 'Photo or video, up to 100MB'}</p>
+                    <p className="text-xs text-gray-400">{isHe ? 'תמונה או וידאו עד 10MB' : 'Photo or video, up to 10MB'}</p>
                   </div>
                 </button>
 
@@ -338,8 +390,9 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">{isHe ? 'פרסום ב:' : 'Publish to:'}</h3>
               <div className="flex gap-2">
-                {['instagram', 'facebook', 'tiktok'].map((p) => {
+                {['instagram', 'facebook'].map((p) => {
                   const active = platforms.includes(p);
+                  const Icon = PLATFORM_ICONS[p];
                   return (
                     <button
                       key={p}
@@ -349,11 +402,13 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
                       }`}
                     >
                       {active && <Check className="w-3.5 h-3.5" />}
+                      {Icon && <Icon className="w-4 h-4" />}
                       {p.charAt(0).toUpperCase() + p.slice(1)}
                     </button>
                   );
                 })}
               </div>
+              <p className="text-xs text-amber-600 mt-2">{isHe ? 'פרסום ישיר לפלטפורמות בקרוב. כיתובים נוצרים כרגיל.' : 'Direct publishing coming soon. Captions still generated normally.'}</p>
             </div>
 
             <div>
@@ -393,7 +448,7 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
           </div>
         )}
 
-        {/* Step 3: Pick from 3 AI options */}
+        {/* Step 3: Pick from 3 AI options + Edit */}
         {step === 'captions' && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -430,17 +485,68 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
               );
             })}
 
+            {/* Caption editor (shown when draft is selected) */}
+            {selectedDraft && (
+              <div className="bg-white rounded-2xl shadow-sm p-5 border border-gray-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                    <Pencil className="w-4 h-4" />
+                    {isHe ? 'ערכו את הכיתוב' : 'Edit caption'}
+                  </h3>
+                  {isEditing && (
+                    <button
+                      onClick={() => {
+                        const draft = drafts.find((d) => d.id === selectedDraft);
+                        if (draft) setEditedCaption(draft.caption);
+                        setIsEditing(false);
+                      }}
+                      className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"
+                    >
+                      <X className="w-3 h-3" /> {isHe ? 'איפוס' : 'Reset'}
+                    </button>
+                  )}
+                </div>
+                <textarea
+                  value={editedCaption}
+                  onChange={(e) => { setEditedCaption(e.target.value); setIsEditing(true); }}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500 min-h-[100px]"
+                  dir={isHe ? 'rtl' : 'ltr'}
+                  rows={4}
+                />
+                {isEditing && (
+                  <p className="text-xs text-amber-600">
+                    {isHe ? 'הכיתוב שונה מהמקור' : 'Caption modified from original'}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="flex gap-3 pt-2">
               <button onClick={() => setStep('format')} className="px-4 py-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
-                onClick={handlePublish}
+                onClick={() => {
+                  if (!selectedDraft) return;
+                  setShowCopyPostModal(true);
+                }}
                 disabled={!selectedDraft}
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white font-semibold transition-colors"
+              >
+                <Copy className="w-5 h-5" />
+                {isHe ? 'העתק ופרסם' : 'Copy & Post'}
+              </button>
+              <button
+                onClick={handlePublish}
+                disabled={!selectedDraft || publishing}
                 className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:bg-gray-300 text-white font-semibold transition-colors"
               >
-                <ArrowRight className="w-5 h-5" />
-                {isHe ? 'פרסם עכשיו' : 'Publish Now'}
+                {publishing ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
+                {isHe ? 'פרסם' : 'Publish'}
               </button>
             </div>
           </div>
@@ -450,29 +556,94 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
         {step === 'publishing' && (
           <div className="bg-white rounded-2xl shadow-lg p-8 text-center space-y-4">
             <Loader2 className="w-12 h-12 animate-spin text-violet-600 mx-auto" />
-            <h2 className="text-lg font-semibold text-gray-900">{isHe ? '...מפרסם' : 'Publishing...'}</h2>
-            <p className="text-sm text-gray-500">{isHe ? 'שולח לכל הפלטפורמות' : 'Sending to all platforms'}</p>
+            <h2 className="text-lg font-semibold text-gray-900">
+              {isHe ? 'מפרסם...' : 'Publishing...'}
+            </h2>
+            <p className="text-sm text-gray-500">
+              {isHe ? 'שולח לפלטפורמות שנבחרו' : 'Sending to selected platforms'}
+            </p>
           </div>
         )}
 
         {/* Step 5: Done */}
         {step === 'done' && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center space-y-4">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-              <Check className="w-8 h-8 text-green-600" />
+          <div className="bg-white rounded-2xl shadow-lg p-8 space-y-5">
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <Check className="w-8 h-8 text-green-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {publishResults.length > 0
+                  ? (isHe ? 'פורסם!' : 'Published!')
+                  : (isHe ? 'הכיתוב הועתק!' : 'Caption Copied!')}
+              </h2>
+              <p className="text-sm text-gray-500">
+                {publishResults.length > 0
+                  ? (isHe ? 'הפוסט פורסם בהצלחה.' : 'Your post has been published.')
+                  : (isHe ? 'הדביקו את הכיתוב בפלטפורמה שלכם.' : 'Paste it into your platform.')}
+              </p>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900">{isHe ? '!פורסם בהצלחה' : 'Published!'}</h2>
-            <p className="text-sm text-gray-500">
-              {isHe ? 'הפוסט פורסם בכל הפלטפורמות שנבחרו' : 'Your post has been published to all selected platforms.'}
-            </p>
+
+            {/* Show publish results if any */}
+            {publishResults.length > 0 && (
+              <div className="space-y-2">
+                {publishResults.filter((r) => r.success).map((r) => (
+                  <div key={r.postId} className="flex items-center justify-between bg-green-50 rounded-xl p-3 text-sm">
+                    <span className="text-green-700 font-medium capitalize">{r.platform}</span>
+                    {r.platformUrl && (
+                      <a href={r.platformUrl} target="_blank" rel="noopener noreferrer" className="text-green-600 flex items-center gap-1 hover:underline">
+                        <ExternalLink className="w-3 h-3" /> View
+                      </a>
+                    )}
+                  </div>
+                ))}
+                {publishResults.filter((r) => !r.success).map((r) => (
+                  <div key={r.postId} className="bg-red-50 rounded-xl p-3 text-sm text-red-700">
+                    <span className="font-medium capitalize">{r.platform}:</span> {r.errorMessage || 'Failed'}
+                  </div>
+                ))}
+              </div>
+            )}
+
             <button
-              onClick={() => { setStep('upload'); setMediaId(null); setPreviewUrl(null); setDrafts([]); setSelectedDraft(null); setCustomPrompt(''); }}
-              className="bg-violet-600 hover:bg-violet-700 text-white font-medium px-6 py-3 rounded-xl transition-colors"
+              onClick={resetFlow}
+              className="w-full bg-violet-600 hover:bg-violet-700 text-white font-medium px-6 py-3 rounded-xl transition-colors"
             >
               {isHe ? 'פוסט נוסף' : 'Create Another Post'}
             </button>
           </div>
         )}
+
+        {/* Copy & Post Modal */}
+        {showCopyPostModal && selectedDraft && (() => {
+          const draft = drafts.find((d) => d.id === selectedDraft);
+          if (!draft) return null;
+          const captionText = editedCaption || draft.caption;
+          return (
+            <CopyPostModal
+              caption={captionText}
+              hashtags={draft.hashtags}
+              platforms={platforms}
+              isHe={isHe}
+              onClose={() => setShowCopyPostModal(false)}
+              onDone={() => {
+                // Track as manual_post
+                fetch('/api/publish', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    draftId: selectedDraft,
+                    brandToken: token,
+                    editedCaption: editedCaption || undefined,
+                    manualPost: true,
+                  }),
+                }).catch(() => { /* best effort tracking */ });
+                setShowCopyPostModal(false);
+                setStep('done');
+              }}
+            />
+          );
+        })()}
       </div>
     </div>
   );

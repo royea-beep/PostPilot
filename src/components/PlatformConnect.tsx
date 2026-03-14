@@ -14,6 +14,7 @@ import {
   Unplug,
   ExternalLink,
   RefreshCw,
+  ChevronDown,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -26,13 +27,29 @@ interface Connection {
   platformUserId: string | null;
   accountName: string | null;
   accountAvatar: string | null;
+  accountType: string | null;
+  pageId: string | null;
+  pageName: string | null;
   status: string;
   scopes: string | null;
   tokenExpiresAt: string | null;
   isExpired: boolean;
   expiresIn: number | null;
+  needsPageSelection: boolean;
+  lastSyncAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+interface PageOption {
+  id: string;
+  name: string;
+  category: string;
+  instagramBusinessAccount: {
+    id: string;
+    username: string;
+    profilePictureUrl?: string;
+  } | null;
 }
 
 interface PlatformMeta {
@@ -46,7 +63,7 @@ interface PlatformMeta {
 }
 
 // ---------------------------------------------------------------------------
-// Platform metadata (client-side, no secrets)
+// Platform metadata
 // ---------------------------------------------------------------------------
 
 const PLATFORMS: PlatformMeta[] = [
@@ -83,18 +100,32 @@ const PLATFORMS: PlatformMeta[] = [
 // Status badge
 // ---------------------------------------------------------------------------
 
-function StatusBadge({ status, isExpired }: { status: string; isExpired: boolean }) {
+function StatusBadge({ status, isExpired, needsPageSelection }: { status: string; isExpired: boolean; needsPageSelection: boolean }) {
+  if (status === 'ACTIVE' && !isExpired) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+        <CheckCircle2 className="w-3 h-3" /> Active
+      </span>
+    );
+  }
+  if (needsPageSelection) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+        <AlertTriangle className="w-3 h-3" /> Select Page
+      </span>
+    );
+  }
+  if ((status === 'CONNECTED' || status === 'ACTIVE') && isExpired) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+        <AlertTriangle className="w-3 h-3" /> Token Expired
+      </span>
+    );
+  }
   if (status === 'CONNECTED' && !isExpired) {
     return (
       <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
         <CheckCircle2 className="w-3 h-3" /> Connected
-      </span>
-    );
-  }
-  if (status === 'CONNECTED' && isExpired) {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-        <AlertTriangle className="w-3 h-3" /> Token Expired
       </span>
     );
   }
@@ -105,7 +136,7 @@ function StatusBadge({ status, isExpired }: { status: string; isExpired: boolean
       </span>
     );
   }
-  if (status === 'REVOKED') {
+  if (status === 'DISCONNECTED' || status === 'REVOKED') {
     return (
       <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
         <XCircle className="w-3 h-3" /> Disconnected
@@ -113,6 +144,140 @@ function StatusBadge({ status, isExpired }: { status: string; isExpired: boolean
     );
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Page selector component
+// ---------------------------------------------------------------------------
+
+function PageSelector({
+  brandId,
+  platform,
+  onSelected,
+}: {
+  brandId: string;
+  platform: string;
+  onSelected: () => void;
+}) {
+  const { authFetch } = useAuth();
+  const [pages, setPages] = useState<PageOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selecting, setSelecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await authFetch(`/api/platforms/pages?brandId=${brandId}&platform=${platform}`);
+        if (res.ok) {
+          const data = await res.json();
+          setPages(data.pages);
+        } else {
+          const err = await res.json();
+          setError(err.error || 'Failed to load pages');
+        }
+      } catch {
+        setError('Network error loading pages');
+      }
+      setLoading(false);
+    }
+    load();
+  }, [authFetch, brandId, platform]);
+
+  const handleSelect = async (pageId: string) => {
+    setSelecting(true);
+    setError(null);
+    try {
+      const res = await authFetch('/api/platforms/select-page', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brandId, platform, pageId }),
+      });
+      if (res.ok) {
+        onSelected();
+      } else {
+        const err = await res.json();
+        setError(err.error || 'Failed to select page');
+      }
+    } catch {
+      setError('Network error');
+    }
+    setSelecting(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="mt-3 p-3 bg-gray-50 rounded-lg flex items-center gap-2 text-sm text-gray-500">
+        <Loader2 className="w-4 h-4 animate-spin" /> Loading available pages...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mt-3 p-3 bg-red-50 rounded-lg text-sm text-red-600">
+        {error}
+      </div>
+    );
+  }
+
+  if (pages.length === 0) {
+    return (
+      <div className="mt-3 p-3 bg-amber-50 rounded-lg text-sm text-amber-700">
+        No Facebook Pages found. Make sure your account manages at least one Page
+        {platform === 'instagram' && ' with a linked Instagram Business account'}.
+      </div>
+    );
+  }
+
+  // Filter for Instagram: only show pages with linked IG accounts
+  const filteredPages = platform === 'instagram'
+    ? pages.filter((p) => p.instagramBusinessAccount)
+    : pages;
+
+  if (filteredPages.length === 0) {
+    return (
+      <div className="mt-3 p-3 bg-amber-50 rounded-lg text-sm text-amber-700">
+        No pages with a linked Instagram Business account found. Link an Instagram account to one of your Facebook Pages first.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 space-y-2">
+      <p className="text-sm font-medium text-gray-700 flex items-center gap-1">
+        <ChevronDown className="w-4 h-4" />
+        Select a {platform === 'instagram' ? 'page with Instagram' : 'page'} to publish to:
+      </p>
+      {filteredPages.map((page) => (
+        <button
+          key={page.id}
+          onClick={() => handleSelect(page.id)}
+          disabled={selecting}
+          className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-violet-300 hover:bg-violet-50 transition-colors flex items-center justify-between"
+        >
+          <div>
+            <p className="font-medium text-gray-900">{page.name}</p>
+            {page.category && (
+              <p className="text-xs text-gray-500">{page.category}</p>
+            )}
+            {page.instagramBusinessAccount && (
+              <p className="text-xs text-pink-600 mt-0.5">
+                IG: @{page.instagramBusinessAccount.username}
+              </p>
+            )}
+          </div>
+          {selecting ? (
+            <Loader2 className="w-4 h-4 animate-spin text-violet-500" />
+          ) : (
+            <span className="text-xs font-medium text-violet-600 bg-violet-100 px-2 py-1 rounded">
+              Select
+            </span>
+          )}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -138,7 +303,7 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
     const connected = searchParams.get('connected');
     const error = searchParams.get('error');
     if (connected) {
-      setToast({ type: 'success', message: `${connected} connected successfully!` });
+      setToast({ type: 'success', message: `${connected} connected! Now select a page to publish to.` });
     } else if (error) {
       setToast({ type: 'error', message: error });
     }
@@ -147,7 +312,7 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
   // Auto-dismiss toast
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(null), 5000);
+    const t = setTimeout(() => setToast(null), 6000);
     return () => clearTimeout(t);
   }, [toast]);
 
@@ -173,7 +338,6 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
       const res = await authFetch(`/api/platforms/${platform}/connect?brandId=${brandId}`);
       if (res.ok) {
         const data = await res.json();
-        // Redirect to the OAuth authorization URL
         window.location.href = data.url;
       } else {
         const err = await res.json();
@@ -207,7 +371,7 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
   };
 
   const getConnection = (platform: string): Connection | undefined =>
-    connections.find((c) => c.platform === platform && c.status !== 'REVOKED');
+    connections.find((c) => c.platform === platform && c.status !== 'DISCONNECTED' && c.status !== 'REVOKED');
 
   const formatExpiry = (expiresIn: number | null): string => {
     if (expiresIn === null) return '';
@@ -255,16 +419,20 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
       {/* Platform cards */}
       {PLATFORMS.map((p) => {
         const conn = getConnection(p.key);
+        const isActive = conn?.status === 'ACTIVE' && !conn.isExpired;
         const isConnected = conn?.status === 'CONNECTED' && !conn.isExpired;
-        const isExpired = conn?.status === 'CONNECTED' && conn.isExpired;
+        const isExpired = (conn?.status === 'CONNECTED' || conn?.status === 'ACTIVE') && conn?.isExpired;
+        const needsPageSelection = conn?.needsPageSelection ?? false;
         const isLoading = connecting === p.key || disconnecting === p.key;
 
         return (
           <div
             key={p.key}
             className={`rounded-xl border p-5 transition-all ${
-              isConnected
+              isActive
                 ? `${p.bgColor} ${p.borderColor}`
+                : needsPageSelection
+                ? 'bg-amber-50 border-amber-200'
                 : 'bg-white border-gray-200'
             }`}
           >
@@ -275,12 +443,21 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-gray-900">{p.label}</h3>
-                    {conn && <StatusBadge status={conn.status} isExpired={conn.isExpired} />}
+                    {conn && (
+                      <StatusBadge
+                        status={conn.status}
+                        isExpired={conn.isExpired}
+                        needsPageSelection={needsPageSelection}
+                      />
+                    )}
                   </div>
-                  {isConnected && conn?.accountName && (
+                  {isActive && conn?.accountName && (
                     <p className="text-sm text-gray-500 mt-0.5">{conn.accountName}</p>
                   )}
-                  {isConnected && conn?.expiresIn !== null && (
+                  {isActive && conn?.pageName && conn.pageName !== conn.accountName && (
+                    <p className="text-xs text-gray-400 mt-0.5">Page: {conn.pageName}</p>
+                  )}
+                  {(isActive || isConnected) && conn?.expiresIn !== null && (
                     <p className="text-xs text-gray-400 mt-0.5">
                       {formatExpiry(conn?.expiresIn ?? null)}
                     </p>
@@ -290,7 +467,7 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
 
               {/* Right: Action buttons */}
               <div className="flex items-center gap-2">
-                {isConnected && (
+                {(isActive || isConnected) && (
                   <button
                     onClick={() => handleDisconnect(p.key)}
                     disabled={isLoading}
@@ -320,22 +497,25 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
                   </button>
                 )}
 
-                {!isConnected && !isExpired && (
-                  <button
-                    onClick={() => handleConnect(p.key)}
-                    disabled={isLoading}
-                    className={`inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg transition-colors ${p.color} ${p.bgColor} ${p.hoverColor} border ${p.borderColor}`}
+                {!isActive && !isConnected && !isExpired && (
+                  <span
+                    className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-gray-100 text-gray-400 border border-gray-200 cursor-default"
+                    title="Platform integration coming soon"
                   >
-                    {connecting === p.key ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <ExternalLink className="w-4 h-4" />
-                    )}
-                    Connect
-                  </button>
+                    Coming Soon
+                  </span>
                 )}
               </div>
             </div>
+
+            {/* Page selection (shown after OAuth for Meta platforms) */}
+            {needsPageSelection && (
+              <PageSelector
+                brandId={brandId}
+                platform={p.key}
+                onSelected={fetchConnections}
+              />
+            )}
           </div>
         );
       })}

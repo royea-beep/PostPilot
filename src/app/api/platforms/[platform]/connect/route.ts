@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import { extractBearerToken, verifyAccessToken } from '@royea/shared-utils/auth';
 import { prisma } from '@/lib/db';
-import { buildAuthUrl, type PlatformKey } from '@/lib/platforms';
+import { buildAuthUrl, isPlatformConfigured, type PlatformKey } from '@/lib/platforms';
 
 const VALID_PLATFORMS = new Set<string>(['instagram', 'facebook', 'tiktok']);
 
@@ -21,6 +21,13 @@ export async function GET(
 
   if (!VALID_PLATFORMS.has(platform)) {
     return NextResponse.json({ error: 'Invalid platform' }, { status: 400 });
+  }
+
+  if (!isPlatformConfigured(platform as PlatformKey)) {
+    return NextResponse.json(
+      { error: `${platform} integration is coming soon. OAuth credentials are not configured yet.` },
+      { status: 503 },
+    );
   }
 
   // Authenticate the user

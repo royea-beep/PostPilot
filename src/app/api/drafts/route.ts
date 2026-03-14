@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { generateCaptions } from '@/lib/ai-captions';
+import { emitServerEvent } from '@/lib/learning';
 
 // POST /api/drafts — generate 3 AI caption options (public, uses brand token)
 export async function POST(req: NextRequest) {
@@ -53,6 +54,25 @@ export async function POST(req: NextRequest) {
         })
       )
     );
+
+    // Record style event for generation (tracks AI inputs/outputs)
+    await prisma.styleEvent.create({
+      data: {
+        brandId: brand.id,
+        eventType: 'GENERATION',
+        contentItemId: media.id,
+        generatedCaptions: JSON.stringify(result.options.map((o) => o.caption)),
+        source: result.aiUsage ? 'ai' : 'template',
+      },
+    }).catch(() => {}); // Non-blocking
+
+    // Learning hook: postGenerated
+    for (const p of platforms) {
+      emitServerEvent('post_generated', 'content', result.options[0]?.caption?.length ?? 0, {
+        platform: p,
+        style: format,
+      });
+    }
 
     return NextResponse.json({
       drafts: drafts.map((d, i) => ({
