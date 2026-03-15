@@ -345,7 +345,7 @@ export default function DashboardPage() {
                     </span>
                   ))}
                   {brand.socialConnections.filter(c => c.status === 'CONNECTED' || c.status === 'ACTIVE').length === 0 && (
-                    <span className="text-xs text-[#9ca3af]/50">No accounts connected</span>
+                    <span className="text-xs text-[#9ca3af]/50">העתק → הדבק → פרסם</span>
                   )}
                 </div>
 

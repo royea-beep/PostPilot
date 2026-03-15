@@ -83,7 +83,7 @@ function PlatformsContent() {
             <h1 className="text-2xl font-bold text-[#e5e5e5]">Platform Connections</h1>
           </div>
           <p className="text-[#9ca3af] text-sm">
-            Connect your social media accounts to publish content directly from PostPilot.
+            PostPilot יוצר תוכן מוכן — העתק והדבק ישירות לרשתות החברתיות שלך. חיבור ישיר בקרוב.
           </p>
         </div>
 

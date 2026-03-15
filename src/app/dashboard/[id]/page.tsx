@@ -205,7 +205,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
               </span>
             ))}
             {brand.socialConnections.filter(c => c.status === 'ACTIVE' || c.status === 'CONNECTED').length === 0 && (
-              <span className="text-sm text-[#9ca3af]/50">No social accounts connected yet</span>
+              <span className="text-sm text-[#9ca3af]/50">העתק את הפוסט והדבק ישירות לפייסבוק, אינסטגרם או טיקטוק</span>
             )}
           </div>
         </div>
