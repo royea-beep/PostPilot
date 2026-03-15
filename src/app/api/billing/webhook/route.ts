@@ -71,19 +71,25 @@ export async function POST(req: NextRequest) {
       }
 
       case 'subscription_updated': {
-        const status = attrs.status === 'active' ? 'ACTIVE'
+        const newStatus = attrs.status === 'active' ? 'ACTIVE'
+          : attrs.status === 'on_trial' ? 'ACTIVE'
           : attrs.status === 'past_due' ? 'PAST_DUE'
           : attrs.status === 'cancelled' ? 'CANCELED'
           : attrs.status === 'paused' ? 'PAUSED'
-          : 'INACTIVE';
+          : null;
 
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
-            subscriptionStatus: status,
-            currentPeriodEnd: attrs.renews_at ? new Date(attrs.renews_at) : null,
-          },
-        });
+        // Never overwrite ACTIVE with a lesser status
+        const updateData: Record<string, unknown> = {
+          currentPeriodEnd: attrs.renews_at ? new Date(attrs.renews_at) : null,
+        };
+        if (newStatus) {
+          const current = await prisma.user.findUnique({ where: { id: userId }, select: { subscriptionStatus: true } });
+          if (!(current?.subscriptionStatus === 'ACTIVE' && newStatus !== 'ACTIVE')) {
+            updateData.subscriptionStatus = newStatus;
+          }
+        }
+
+        await prisma.user.update({ where: { id: userId }, data: updateData });
         break;
       }
 
