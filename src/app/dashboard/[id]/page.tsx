@@ -183,15 +183,15 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
             </div>
             <div className="flex gap-6 text-center">
               <div>
-                <p className="text-2xl font-bold text-blue-400">{brand._count.posts}</p>
+                <p className="text-2xl font-bold text-blue-400">{brand._count?.posts ?? 0}</p>
                 <p className="text-xs text-[#9ca3af]">Posts</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-blue-400">{brand._count.mediaUploads}</p>
+                <p className="text-2xl font-bold text-blue-400">{brand._count?.mediaUploads ?? 0}</p>
                 <p className="text-xs text-[#9ca3af]">Media</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-blue-400">{brand._count.postDrafts}</p>
+                <p className="text-2xl font-bold text-blue-400">{brand._count?.postDrafts ?? 0}</p>
                 <p className="text-xs text-[#9ca3af]">Drafts</p>
               </div>
             </div>

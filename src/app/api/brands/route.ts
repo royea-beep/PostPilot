@@ -51,7 +51,11 @@ export const POST = withAuth((async (req: NextRequest, userId: string) => {
         language: data.language,
         timezone: data.timezone,
       },
-      include: { socialConnections: true },
+      include: {
+        socialConnections: { select: { id: true, platform: true, accountName: true, status: true, accountAvatar: true } },
+        styleProfile: { select: { analyzedPostCount: true } },
+        _count: { select: { posts: true, mediaUploads: true } },
+      },
     });
 
     // Learning hook: brandCreated

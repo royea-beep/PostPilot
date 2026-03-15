@@ -278,8 +278,8 @@ export default function DashboardPage() {
 
                 {/* Stats */}
                 <div className="flex items-center gap-4 text-xs text-[#9ca3af]/60 mb-3">
-                  <span className="flex items-center gap-1"><ImageIcon className="w-3 h-3" />{brand._count.mediaUploads} media</span>
-                  <span>{brand._count.posts} posts</span>
+                  <span className="flex items-center gap-1"><ImageIcon className="w-3 h-3" />{brand._count?.mediaUploads ?? 0} media</span>
+                  <span>{brand._count?.posts ?? 0} posts</span>
                 </div>
 
                 {/* Actions */}
