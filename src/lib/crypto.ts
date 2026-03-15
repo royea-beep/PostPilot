@@ -23,6 +23,15 @@ export function decrypt(encrypted: string, iv: string, authTag: string): string 
   return decipher.update(Buffer.from(encrypted, 'base64')) + decipher.final('utf8');
 }
 
+/**
+ * Decrypt a JSON-wrapped encrypted value (used for refresh tokens).
+ * The callback route stores refresh tokens as JSON: { encrypted, iv, authTag }
+ */
+export function decryptJsonWrapped(jsonString: string): string {
+  const { encrypted, iv, authTag } = JSON.parse(jsonString);
+  return decrypt(encrypted, iv, authTag);
+}
+
 export function generateToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
