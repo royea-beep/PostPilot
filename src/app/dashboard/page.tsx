@@ -88,10 +88,13 @@ export default function DashboardPage() {
     })();
   }, [user, authFetch]);
 
+  const [createError, setCreateError] = useState<string | null>(null);
+
   const createBrand = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) return;
     setCreating(true);
+    setCreateError(null);
     try {
       const res = await authFetch('/api/brands', {
         method: 'POST',
@@ -103,8 +106,16 @@ export default function DashboardPage() {
         setShowCreate(false);
         setNewName('');
         setNewIndustry('');
+        setCreateError(null);
+      } else {
+        const data = await res.json().catch(() => ({ error: 'Failed to create brand' }));
+        if (data.code === 'LIMIT_REACHED') {
+          setCreateError(`${data.error} You have ${brands.length} brands on the Free plan (limit: 2).`);
+        } else {
+          setCreateError(data.error || 'Failed to create brand');
+        }
       }
-    } catch { /* ignore */ }
+    } catch { setCreateError('Network error — please try again'); }
     setCreating(false);
   };
 
@@ -208,8 +219,18 @@ export default function DashboardPage() {
               <form onSubmit={createBrand} className="space-y-3">
                 <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Brand / Client name" className="w-full px-4 py-3 bg-[#0a0a0a] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required autoFocus />
                 <input type="text" value={newIndustry} onChange={(e) => setNewIndustry(e.target.value)} placeholder="Industry (optional)" className="w-full px-4 py-3 bg-[#0a0a0a] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                {createError && (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                    <p className="text-sm text-red-400">{createError}</p>
+                    {createError.includes('Upgrade') && (
+                      <a href="/billing" className="inline-block mt-2 text-xs font-medium text-blue-400 hover:text-blue-300 underline">
+                        View plans &rarr;
+                      </a>
+                    )}
+                  </div>
+                )}
                 <div className="flex gap-3">
-                  <button type="button" onClick={() => setShowCreate(false)} className="flex-1 py-3 rounded-lg border border-white/10 text-[#9ca3af] font-medium hover:bg-white/5 transition-colors">Cancel</button>
+                  <button type="button" onClick={() => { setShowCreate(false); setCreateError(null); }} className="flex-1 py-3 rounded-lg border border-white/10 text-[#9ca3af] font-medium hover:bg-white/5 transition-colors">Cancel</button>
                   <button type="submit" disabled={creating} className="flex-1 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">{creating ? 'Creating...' : 'Create'}</button>
                 </div>
               </form>
