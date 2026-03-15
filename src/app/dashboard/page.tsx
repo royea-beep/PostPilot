@@ -55,6 +55,10 @@ export default function DashboardPage() {
   const [newIndustry, setNewIndustry] = useState('');
   const [creating, setCreating] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
+  const [showPromo, setShowPromo] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoResult, setPromoResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
   // Load demo mode from localStorage
   useEffect(() => {
@@ -117,6 +121,27 @@ export default function DashboardPage() {
       }
     } catch { setCreateError('Network error — please try again'); }
     setCreating(false);
+  };
+
+  const applyPromo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!promoCode.trim()) return;
+    setPromoLoading(true);
+    setPromoResult(null);
+    try {
+      const res = await authFetch('/api/billing/promo', {
+        method: 'POST',
+        body: JSON.stringify({ code: promoCode.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPromoResult({ ok: true, msg: `Upgraded to ${data.plan}!` });
+        setTimeout(() => { setShowPromo(false); window.location.reload(); }, 1500);
+      } else {
+        setPromoResult({ ok: false, msg: data.error || 'Invalid code' });
+      }
+    } catch { setPromoResult({ ok: false, msg: 'Network error' }); }
+    setPromoLoading(false);
   };
 
   if (loading || !user) {
@@ -237,6 +262,33 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        {/* Promo Code Modal */}
+        {showPromo && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowPromo(false)}>
+            <div className="bg-[#111] border border-white/10 rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+              <h2 className="text-lg font-bold text-[#e5e5e5] mb-2">Promo Code</h2>
+              <p className="text-sm text-[#9ca3af] mb-4">Enter a promo code to upgrade your plan.</p>
+              <form onSubmit={applyPromo} className="space-y-3">
+                <input type="text" value={promoCode} onChange={(e) => setPromoCode(e.target.value)} placeholder="Enter code" className="w-full px-4 py-3 bg-[#0a0a0a] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" autoFocus autoComplete="off" />
+                {promoResult && (
+                  <p className={`text-sm text-center ${promoResult.ok ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>{promoResult.msg}</p>
+                )}
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => { setShowPromo(false); setPromoResult(null); setPromoCode(''); }} className="flex-1 py-3 rounded-lg border border-white/10 text-[#9ca3af] font-medium hover:bg-white/5 transition-colors">Cancel</button>
+                  <button type="submit" disabled={promoLoading} className="flex-1 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">{promoLoading ? 'Applying...' : 'Apply'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Promo code link */}
+        <div className="mb-4 text-center">
+          <button onClick={() => { setShowPromo(true); setPromoCode(''); setPromoResult(null); }} className="text-xs text-[#9ca3af]/60 hover:text-blue-400 transition-colors">
+            Have a promo code?
+          </button>
+        </div>
 
         {/* Stats Bar */}
         {stats && stats.totalBrands > 0 && (
