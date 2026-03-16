@@ -52,6 +52,8 @@ async function insertReport(config: BugReporterConfig, title: string, desc?: str
   const row = { project: config.projectName, version: config.version, title, description: desc || null, url: location.href, user_agent: navigator.userAgent, user_id: config.userId || null, session_id: config.sessionId || _sessionId, console_logs: capturedLogs.slice(-maxLogs), metadata: {}, status: 'open' };
   const res = await fetch(`${config.supabaseUrl}/rest/v1/bug_reports`, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: config.supabaseKey, Authorization: `Bearer ${config.supabaseKey}`, Prefer: 'return=minimal' }, body: JSON.stringify(row) });
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
+  // Fire-and-forget: sync bug to Google Drive
+  fetch(`${config.supabaseUrl}/functions/v1/sync-bugs-to-drive`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ description: title + (desc ? ' — ' + desc : ''), severity: 'medium', page: location.pathname, timestamp: new Date().toISOString() }) }).catch(() => {});
 }
 
 function openReporter(): void {
