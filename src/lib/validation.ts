@@ -24,7 +24,7 @@ export const generateDraftsSchema = z.object({
   brandId: z.string(),
   mediaId: z.string(),
   format: z.enum(['story', 'post', 'reel']),
-  platforms: z.array(z.enum(['instagram', 'facebook', 'tiktok'])).min(1),
+  platforms: z.array(z.enum(['instagram', 'facebook'])).min(1),
   customPrompt: z.string().max(500).optional(),
 });
 

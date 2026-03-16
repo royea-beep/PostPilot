@@ -92,7 +92,7 @@ export default function LandingPage() {
               <div className="bg-[#111] rounded-xl p-5 border border-white/10">
                 <Rocket className="w-6 h-6 text-blue-400 mb-3" />
                 <h3 className="font-semibold text-[#e5e5e5] mb-2">Multi-platform</h3>
-                <p className="text-sm text-[#9ca3af]">Generate captions for Instagram, Facebook, and TikTok from a single upload.</p>
+                <p className="text-sm text-[#9ca3af]">Generate captions for Instagram and Facebook from a single upload.</p>
               </div>
             </div>
           </div>

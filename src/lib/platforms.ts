@@ -149,7 +149,8 @@ export function getPlatformMeta() {
   return [
     { key: 'instagram' as const, label: 'Instagram', color: 'bg-pink-100 text-pink-700', icon: 'Instagram' },
     { key: 'facebook' as const, label: 'Facebook', color: 'bg-blue-100 text-blue-700', icon: 'Facebook' },
-    { key: 'tiktok' as const, label: 'TikTok', color: 'bg-gray-900 text-white', icon: 'Music2' },
+    // TikTok disabled in UI — backend guard remains in publish-job.service.ts
+    // { key: 'tiktok' as const, label: 'TikTok', color: 'bg-gray-900 text-white', icon: 'Music2' },
   ];
 }
 

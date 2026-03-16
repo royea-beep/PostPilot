@@ -4,7 +4,6 @@ import { useState } from 'react';
 import {
   Instagram,
   Facebook,
-  Music2,
   ExternalLink,
   CheckCircle2,
   Clock,
@@ -18,7 +17,7 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-type PlatformKey = 'instagram' | 'facebook' | 'tiktok';
+type PlatformKey = 'instagram' | 'facebook';
 
 type RequestStatus = 'idle' | 'pending' | 'received' | 'error';
 
@@ -53,10 +52,10 @@ const CREDENTIAL_PLATFORMS: CredentialPlatform[] = [
     key: 'instagram',
     label: 'Instagram Business API',
     keydropSlug: 'postpilot-instagram',
-    color: 'text-pink-600',
-    bgColor: 'bg-pink-50',
-    borderColor: 'border-pink-200',
-    hoverColor: 'hover:bg-pink-100',
+    color: 'text-pink-400',
+    bgColor: 'bg-pink-500/10',
+    borderColor: 'border-pink-500/20',
+    hoverColor: 'hover:bg-pink-500/15',
     icon: <Instagram className="w-5 h-5" />,
     description: 'Required for publishing posts and stories to your Instagram Business account.',
     fields: ['Client ID', 'Client Secret', 'Access Token'],
@@ -65,25 +64,13 @@ const CREDENTIAL_PLATFORMS: CredentialPlatform[] = [
     key: 'facebook',
     label: 'Facebook Pages API',
     keydropSlug: 'postpilot-facebook-pages',
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-    hoverColor: 'hover:bg-blue-100',
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-500/10',
+    borderColor: 'border-blue-500/20',
+    hoverColor: 'hover:bg-blue-500/15',
     icon: <Facebook className="w-5 h-5" />,
     description: 'Required for managing and publishing to your Facebook Page.',
     fields: ['App ID', 'App Secret', 'Page Access Token'],
-  },
-  {
-    key: 'tiktok',
-    label: 'TikTok for Business',
-    keydropSlug: 'postpilot-tiktok',
-    color: 'text-gray-900',
-    bgColor: 'bg-gray-50',
-    borderColor: 'border-gray-300',
-    hoverColor: 'hover:bg-gray-100',
-    icon: <Music2 className="w-5 h-5" />,
-    description: 'Required for uploading and publishing videos to TikTok.',
-    fields: ['App ID', 'App Secret'],
   },
 ];
 
@@ -95,19 +82,19 @@ function StatusIndicator({ status }: { status: RequestStatus }) {
   switch (status) {
     case 'pending':
       return (
-        <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+        <span className="inline-flex items-center gap-1 text-xs font-medium text-[#f59e0b] bg-[#f59e0b]/10 px-2 py-0.5 rounded-full">
           <Clock className="w-3 h-3" /> Awaiting Credentials
         </span>
       );
     case 'received':
       return (
-        <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+        <span className="inline-flex items-center gap-1 text-xs font-medium text-[#22c55e] bg-[#22c55e]/10 px-2 py-0.5 rounded-full">
           <CheckCircle2 className="w-3 h-3" /> Credentials Received
         </span>
       );
     case 'error':
       return (
-        <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
+        <span className="inline-flex items-center gap-1 text-xs font-medium text-[#ef4444] bg-[#ef4444]/10 px-2 py-0.5 rounded-full">
           <XCircle className="w-3 h-3" /> Error
         </span>
       );
@@ -166,12 +153,12 @@ export function CredentialRequest({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-violet-100 rounded-lg">
-          <KeyRound className="w-5 h-5 text-violet-600" />
+        <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <KeyRound className="w-5 h-5 text-blue-400" />
         </div>
         <div>
-          <h3 className="font-semibold text-gray-900">Platform Credentials</h3>
-          <p className="text-sm text-gray-500">
+          <h3 className="font-semibold text-[#e5e5e5]">Platform Credentials</h3>
+          <p className="text-sm text-[#9ca3af]">
             Securely collect API credentials via 1-2Clicks (KeyDrop)
           </p>
         </div>
@@ -189,7 +176,7 @@ export function CredentialRequest({
               className={`rounded-xl border p-4 transition-all ${
                 isReceived
                   ? `${platform.bgColor} ${platform.borderColor}`
-                  : 'bg-white border-gray-200'
+                  : 'bg-[#111] border-white/10'
               }`}
             >
               <div className="flex items-start justify-between gap-4">
@@ -198,17 +185,17 @@ export function CredentialRequest({
                   <div className={`mt-0.5 ${platform.color}`}>{platform.icon}</div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-medium text-gray-900">{platform.label}</h4>
+                      <h4 className="font-medium text-[#e5e5e5]">{platform.label}</h4>
                       <StatusIndicator status={status} />
                     </div>
-                    <p className="text-sm text-gray-500 mt-0.5">
+                    <p className="text-sm text-[#9ca3af] mt-0.5">
                       {platform.description}
                     </p>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {platform.fields.map((field) => (
                         <span
                           key={field}
-                          className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md"
+                          className="text-xs bg-white/5 text-[#9ca3af] px-2 py-0.5 rounded-md border border-white/5"
                         >
                           {field}
                         </span>
@@ -222,11 +209,11 @@ export function CredentialRequest({
                   {/* Copy link button */}
                   <button
                     onClick={() => handleCopyLink(platform)}
-                    className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="inline-flex items-center gap-1 text-xs text-[#9ca3af] hover:text-[#e5e5e5] px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
                     title="Copy credential request link"
                   >
                     {copiedSlug === platform.keydropSlug ? (
-                      <Check className="w-3.5 h-3.5 text-green-600" />
+                      <Check className="w-3.5 h-3.5 text-[#22c55e]" />
                     ) : (
                       <Copy className="w-3.5 h-3.5" />
                     )}
@@ -235,7 +222,7 @@ export function CredentialRequest({
                   {status === 'pending' && (
                     <button
                       onClick={() => handleMarkReceived(platform.key)}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600 hover:text-green-700 hover:bg-green-50 px-3 py-1.5 rounded-lg transition-colors border border-green-200"
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-[#22c55e] hover:bg-[#22c55e]/10 px-3 py-1.5 rounded-lg transition-colors border border-[#22c55e]/20"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       Mark Received
@@ -255,7 +242,7 @@ export function CredentialRequest({
                   {isReceived && (
                     <button
                       onClick={() => handleOpenKeyDrop(platform)}
-                      className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition-colors"
+                      className="inline-flex items-center gap-1.5 text-xs text-[#9ca3af] hover:text-[#e5e5e5] hover:bg-white/5 px-3 py-1.5 rounded-lg transition-colors"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                       Update
@@ -269,7 +256,7 @@ export function CredentialRequest({
       </div>
 
       {/* Footer info */}
-      <p className="text-xs text-gray-400 text-center">
+      <p className="text-xs text-[#9ca3af]/40 text-center">
         Credentials are collected securely through 1-2Clicks (KeyDrop) with
         field-level validation, step-by-step guides, and encrypted storage.
       </p>

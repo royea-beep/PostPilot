@@ -115,9 +115,48 @@ export async function publishToInstagram(params: {
   imageUrl: string;
   caption: string;
 }): Promise<PublishResult> {
-  const { igUserId, pageAccessToken, imageUrl, caption } = params;
+  const { igUserId, pageAccessToken, caption } = params;
+  let { imageUrl } = params;
 
   try {
+    // --- URL validation ---
+    // Ensure URL uses HTTPS (Instagram requires it)
+    if (!imageUrl.startsWith('https://')) {
+      if (imageUrl.startsWith('http://')) {
+        imageUrl = imageUrl.replace('http://', 'https://');
+      } else {
+        return {
+          success: false,
+          errorCode: 'INVALID_IMAGE_URL',
+          errorMessage: 'Image URL must start with https://',
+          rawResponse: { imageUrl },
+        };
+      }
+    }
+
+    // Verify the image URL is accessible before sending to Instagram
+    try {
+      const headRes = await fetch(imageUrl, {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!headRes.ok) {
+        return {
+          success: false,
+          errorCode: 'IMAGE_UNREACHABLE',
+          errorMessage: `Image URL returned HTTP ${headRes.status}. Ensure the image is publicly accessible.`,
+          rawResponse: { imageUrl, httpStatus: headRes.status },
+        };
+      }
+    } catch (headErr) {
+      return {
+        success: false,
+        errorCode: 'IMAGE_UNREACHABLE',
+        errorMessage: `Could not reach image URL: ${headErr instanceof Error ? headErr.message : 'timeout or network error'}`,
+        rawResponse: { imageUrl, error: String(headErr) },
+      };
+    }
+
     // Step 1: Create media container
     const containerParams = new URLSearchParams({
       image_url: imageUrl,

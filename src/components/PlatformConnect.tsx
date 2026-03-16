@@ -60,6 +60,7 @@ interface PlatformMeta {
   borderColor: string;
   hoverColor: string;
   icon: React.ReactNode;
+  comingSoon?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -70,29 +71,30 @@ const PLATFORMS: PlatformMeta[] = [
   {
     key: 'instagram',
     label: 'Instagram',
-    color: 'text-pink-600',
-    bgColor: 'bg-pink-50',
-    borderColor: 'border-pink-200',
-    hoverColor: 'hover:bg-pink-100',
+    color: 'text-pink-400',
+    bgColor: 'bg-pink-500/10',
+    borderColor: 'border-pink-500/20',
+    hoverColor: 'hover:bg-pink-500/15',
     icon: <Instagram className="w-6 h-6" />,
   },
   {
     key: 'facebook',
     label: 'Facebook',
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-    hoverColor: 'hover:bg-blue-100',
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-500/10',
+    borderColor: 'border-blue-500/20',
+    hoverColor: 'hover:bg-blue-500/15',
     icon: <Facebook className="w-6 h-6" />,
   },
   {
     key: 'tiktok',
     label: 'TikTok',
-    color: 'text-gray-900',
-    bgColor: 'bg-gray-50',
-    borderColor: 'border-gray-300',
-    hoverColor: 'hover:bg-gray-100',
+    color: 'text-[#e5e5e5]',
+    bgColor: 'bg-white/5',
+    borderColor: 'border-white/10',
+    hoverColor: 'hover:bg-white/10',
     icon: <Music2 className="w-6 h-6" />,
+    comingSoon: true,
   },
 ];
 
@@ -103,42 +105,42 @@ const PLATFORMS: PlatformMeta[] = [
 function StatusBadge({ status, isExpired, needsPageSelection }: { status: string; isExpired: boolean; needsPageSelection: boolean }) {
   if (status === 'ACTIVE' && !isExpired) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-[#22c55e] bg-[#22c55e]/10 px-2 py-0.5 rounded-full">
         <CheckCircle2 className="w-3 h-3" /> Active
       </span>
     );
   }
   if (needsPageSelection) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-[#f59e0b] bg-[#f59e0b]/10 px-2 py-0.5 rounded-full">
         <AlertTriangle className="w-3 h-3" /> Select Page
       </span>
     );
   }
   if ((status === 'CONNECTED' || status === 'ACTIVE') && isExpired) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-[#f59e0b] bg-[#f59e0b]/10 px-2 py-0.5 rounded-full">
         <AlertTriangle className="w-3 h-3" /> Token Expired
       </span>
     );
   }
   if (status === 'CONNECTED' && !isExpired) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-[#22c55e] bg-[#22c55e]/10 px-2 py-0.5 rounded-full">
         <CheckCircle2 className="w-3 h-3" /> Connected
       </span>
     );
   }
   if (status === 'PENDING') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full">
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-[#f59e0b] bg-[#f59e0b]/10 px-2 py-0.5 rounded-full">
         <Loader2 className="w-3 h-3 animate-spin" /> Pending
       </span>
     );
   }
   if (status === 'DISCONNECTED' || status === 'REVOKED') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-[#ef4444] bg-[#ef4444]/10 px-2 py-0.5 rounded-full">
         <XCircle className="w-3 h-3" /> Disconnected
       </span>
     );
@@ -207,7 +209,7 @@ function PageSelector({
 
   if (loading) {
     return (
-      <div className="mt-3 p-3 bg-gray-50 rounded-lg flex items-center gap-2 text-sm text-gray-500">
+      <div className="mt-3 p-3 bg-white/5 rounded-lg flex items-center gap-2 text-sm text-[#9ca3af]">
         <Loader2 className="w-4 h-4 animate-spin" /> Loading available pages...
       </div>
     );
@@ -215,7 +217,7 @@ function PageSelector({
 
   if (error) {
     return (
-      <div className="mt-3 p-3 bg-red-50 rounded-lg text-sm text-red-600">
+      <div className="mt-3 p-3 bg-[#ef4444]/10 rounded-lg text-sm text-[#ef4444]">
         {error}
       </div>
     );
@@ -223,7 +225,7 @@ function PageSelector({
 
   if (pages.length === 0) {
     return (
-      <div className="mt-3 p-3 bg-amber-50 rounded-lg text-sm text-amber-700">
+      <div className="mt-3 p-3 bg-[#f59e0b]/10 rounded-lg text-sm text-[#f59e0b]">
         No Facebook Pages found. Make sure your account manages at least one Page
         {platform === 'instagram' && ' with a linked Instagram Business account'}.
       </div>
@@ -237,7 +239,7 @@ function PageSelector({
 
   if (filteredPages.length === 0) {
     return (
-      <div className="mt-3 p-3 bg-amber-50 rounded-lg text-sm text-amber-700">
+      <div className="mt-3 p-3 bg-[#f59e0b]/10 rounded-lg text-sm text-[#f59e0b]">
         No pages with a linked Instagram Business account found. Link an Instagram account to one of your Facebook Pages first.
       </div>
     );
@@ -245,7 +247,7 @@ function PageSelector({
 
   return (
     <div className="mt-3 space-y-2">
-      <p className="text-sm font-medium text-gray-700 flex items-center gap-1">
+      <p className="text-sm font-medium text-[#9ca3af] flex items-center gap-1">
         <ChevronDown className="w-4 h-4" />
         Select a {platform === 'instagram' ? 'page with Instagram' : 'page'} to publish to:
       </p>
@@ -254,23 +256,23 @@ function PageSelector({
           key={page.id}
           onClick={() => handleSelect(page.id)}
           disabled={selecting}
-          className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-violet-300 hover:bg-violet-50 transition-colors flex items-center justify-between"
+          className="w-full text-left p-3 rounded-lg border border-white/10 hover:border-blue-500/30 hover:bg-blue-500/5 transition-colors flex items-center justify-between"
         >
           <div>
-            <p className="font-medium text-gray-900">{page.name}</p>
+            <p className="font-medium text-[#e5e5e5]">{page.name}</p>
             {page.category && (
-              <p className="text-xs text-gray-500">{page.category}</p>
+              <p className="text-xs text-[#9ca3af]">{page.category}</p>
             )}
             {page.instagramBusinessAccount && (
-              <p className="text-xs text-pink-600 mt-0.5">
+              <p className="text-xs text-pink-400 mt-0.5">
                 IG: @{page.instagramBusinessAccount.username}
               </p>
             )}
           </div>
           {selecting ? (
-            <Loader2 className="w-4 h-4 animate-spin text-violet-500" />
+            <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
           ) : (
-            <span className="text-xs font-medium text-violet-600 bg-violet-100 px-2 py-1 rounded">
+            <span className="text-xs font-medium text-blue-400 bg-blue-500/10 px-2 py-1 rounded">
               Select
             </span>
           )}
@@ -385,7 +387,7 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 text-violet-500 animate-spin" />
+        <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
       </div>
     );
   }
@@ -397,8 +399,8 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
         <div
           className={`rounded-lg px-4 py-3 text-sm font-medium flex items-center gap-2 animate-slide-up ${
             toast.type === 'success'
-              ? 'bg-green-50 text-green-700 border border-green-200'
-              : 'bg-red-50 text-red-700 border border-red-200'
+              ? 'bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/20'
+              : 'bg-[#ef4444]/10 text-[#ef4444] border border-[#ef4444]/20'
           }`}
         >
           {toast.type === 'success' ? (
@@ -418,6 +420,31 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
 
       {/* Platform cards */}
       {PLATFORMS.map((p) => {
+        // TikTok: always show as Coming Soon, skip connection logic
+        if (p.comingSoon) {
+          return (
+            <div
+              key={p.key}
+              className="rounded-xl border p-5 transition-all bg-[#111] border-white/10 opacity-60"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`${p.color}`}>{p.icon}</div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-[#e5e5e5]">{p.label}</h3>
+                      <span className="inline-flex items-center text-xs font-medium text-[#9ca3af] bg-white/5 px-2 py-0.5 rounded-full">
+                        Coming Soon
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#9ca3af]/60 mt-0.5">TikTok integration is not yet available.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         const conn = getConnection(p.key);
         const isActive = conn?.status === 'ACTIVE' && !conn.isExpired;
         const isConnected = conn?.status === 'CONNECTED' && !conn.isExpired;
@@ -432,8 +459,8 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
               isActive
                 ? `${p.bgColor} ${p.borderColor}`
                 : needsPageSelection
-                ? 'bg-amber-50 border-amber-200'
-                : 'bg-white border-gray-200'
+                ? 'bg-[#f59e0b]/5 border-[#f59e0b]/20'
+                : 'bg-[#111] border-white/10'
             }`}
           >
             <div className="flex items-center justify-between">
@@ -442,7 +469,7 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
                 <div className={`${p.color}`}>{p.icon}</div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-gray-900">{p.label}</h3>
+                    <h3 className="font-semibold text-[#e5e5e5]">{p.label}</h3>
                     {conn && (
                       <StatusBadge
                         status={conn.status}
@@ -452,13 +479,13 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
                     )}
                   </div>
                   {isActive && conn?.accountName && (
-                    <p className="text-sm text-gray-500 mt-0.5">{conn.accountName}</p>
+                    <p className="text-sm text-[#9ca3af] mt-0.5">{conn.accountName}</p>
                   )}
                   {isActive && conn?.pageName && conn.pageName !== conn.accountName && (
-                    <p className="text-xs text-gray-400 mt-0.5">Page: {conn.pageName}</p>
+                    <p className="text-xs text-[#9ca3af]/60 mt-0.5">Page: {conn.pageName}</p>
                   )}
                   {(isActive || isConnected) && conn?.expiresIn !== null && (
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-[#9ca3af]/60 mt-0.5">
                       {formatExpiry(conn?.expiresIn ?? null)}
                     </p>
                   )}
@@ -471,7 +498,7 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
                   <button
                     onClick={() => handleDisconnect(p.key)}
                     disabled={isLoading}
-                    className="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
+                    className="inline-flex items-center gap-1.5 text-sm text-[#ef4444] hover:text-red-300 hover:bg-[#ef4444]/10 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     {disconnecting === p.key ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -486,7 +513,7 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
                   <button
                     onClick={() => handleConnect(p.key)}
                     disabled={isLoading}
-                    className="inline-flex items-center gap-1.5 text-sm text-amber-600 hover:text-amber-700 hover:bg-amber-50 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                    className="inline-flex items-center gap-1.5 text-sm text-[#f59e0b] hover:text-amber-300 hover:bg-[#f59e0b]/10 px-3 py-1.5 rounded-lg transition-colors font-medium"
                   >
                     {connecting === p.key ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -498,12 +525,18 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
                 )}
 
                 {!isActive && !isConnected && !isExpired && (
-                  <span
-                    className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-gray-100 text-gray-400 border border-gray-200 cursor-default"
-                    title="Platform integration coming soon"
+                  <button
+                    onClick={() => handleConnect(p.key)}
+                    disabled={isLoading}
+                    className={`inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg transition-colors ${p.color} ${p.bgColor} ${p.hoverColor} border ${p.borderColor}`}
                   >
-                    Coming Soon
-                  </span>
+                    {connecting === p.key ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ExternalLink className="w-4 h-4" />
+                    )}
+                    Connect
+                  </button>
                 )}
               </div>
             </div>
@@ -521,7 +554,7 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
       })}
 
       {/* Info note */}
-      <p className="text-xs text-gray-400 mt-4 text-center">
+      <p className="text-xs text-[#9ca3af]/40 mt-4 text-center">
         OAuth tokens are encrypted with AES-256-GCM and stored securely. PostPilot never stores plaintext credentials.
       </p>
     </div>
