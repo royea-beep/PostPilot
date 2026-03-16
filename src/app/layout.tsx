@@ -7,6 +7,7 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { ProjectLearner } from '@/components/ProjectLearner';
 import { ShareButton } from '@/components/ShareButton';
 import { BugReporterInit } from '@/components/BugReporterInit';
+import { ErrorLoggerInit } from '@/components/ErrorLoggerInit';
 import { CookieConsent } from '@/components/CookieConsent';
 import './globals.css';
 
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CookieConsent />
         <ShareButton />
         <BugReporterInit />
+        <ErrorLoggerInit />
       </body>
     </html>
   );
