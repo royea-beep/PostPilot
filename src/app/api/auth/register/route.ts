@@ -3,8 +3,39 @@ import { prisma } from '@/lib/db';
 import { hashPassword, signAccessToken, signRefreshToken } from '@royea/shared-utils/auth';
 import { registerSchema } from '@/lib/validation';
 
+// ---------------------------------------------------------------------------
+// In-memory rate limiter — 3 attempts per 15 minutes per IP
+// ---------------------------------------------------------------------------
+const registerAttempts = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(ip: string, max = 3, windowMs = 900000): boolean {
+  const now = Date.now();
+  // Cleanup old entries periodically
+  if (registerAttempts.size > 500) {
+    for (const [k, v] of registerAttempts) {
+      if (now > v.resetAt) registerAttempts.delete(k);
+    }
+  }
+  const entry = registerAttempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    registerAttempts.set(ip, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (entry.count >= max) return false;
+  entry.count++;
+  return true;
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for') || 'unknown';
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json(
+        { error: 'Too many attempts. Try again in 15 minutes.' },
+        { status: 429 },
+      );
+    }
+
     const body = await req.json();
     const data = registerSchema.parse(body);
     const promoCode = typeof body.promoCode === 'string' ? body.promoCode.trim() : '';

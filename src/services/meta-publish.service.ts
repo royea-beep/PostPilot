@@ -280,9 +280,56 @@ export async function publishInstagramReel(params: {
   videoUrl: string;
   caption: string;
 }): Promise<PublishResult> {
-  const { igUserId, pageAccessToken, videoUrl, caption } = params;
+  const { igUserId, pageAccessToken, caption } = params;
+  let { videoUrl } = params;
 
   try {
+    // --- Video URL validation ---
+    if (!videoUrl.startsWith('https://')) {
+      if (videoUrl.startsWith('http://')) {
+        videoUrl = videoUrl.replace('http://', 'https://');
+      } else {
+        return {
+          success: false,
+          errorCode: 'INVALID_VIDEO_URL',
+          errorMessage: 'Video URL must start with https://',
+          rawResponse: { videoUrl },
+        };
+      }
+    }
+
+    // Verify the video URL is accessible and is an mp4
+    try {
+      const headRes = await fetch(videoUrl, {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!headRes.ok) {
+        return {
+          success: false,
+          errorCode: 'VIDEO_UNREACHABLE',
+          errorMessage: `Video URL returned HTTP ${headRes.status}. Ensure the video is publicly accessible.`,
+          rawResponse: { videoUrl, httpStatus: headRes.status },
+        };
+      }
+      const contentType = headRes.headers.get('content-type') || '';
+      if (contentType && !contentType.includes('video/')) {
+        return {
+          success: false,
+          errorCode: 'INVALID_VIDEO_FORMAT',
+          errorMessage: `Expected video content type but got "${contentType}". Instagram Reels require mp4 video.`,
+          rawResponse: { videoUrl, contentType },
+        };
+      }
+    } catch (headErr) {
+      return {
+        success: false,
+        errorCode: 'VIDEO_UNREACHABLE',
+        errorMessage: `Could not reach video URL: ${headErr instanceof Error ? headErr.message : 'timeout or network error'}`,
+        rawResponse: { videoUrl, error: String(headErr) },
+      };
+    }
+
     // Step 1: Create REELS container
     const containerParams = new URLSearchParams({
       media_type: 'REELS',
