@@ -7,7 +7,14 @@
 
 import { prisma } from '@/lib/db';
 import { decrypt } from '@/lib/crypto';
-import { publishToFacebookPage, publishToInstagram, type PublishResult } from './meta-publish.service';
+import {
+  publishToFacebookPage,
+  publishToInstagram,
+  publishInstagramReel,
+  publishInstagramStory,
+  publishFacebookStory,
+  type PublishResult,
+} from './meta-publish.service';
 
 export interface PublishJobResult {
   postId: string;
@@ -81,14 +88,26 @@ export async function processPublishJob(
   const imageUrl = `${appUrl}/api/media/${media.id}`;
 
   let publishResult: PublishResult;
+  const postFormat = post.format; // 'post', 'reel', or 'story'
+  const isVideo = media.mediaType === 'video';
 
   if (platform === 'facebook') {
-    publishResult = await publishToFacebookPage({
-      pageId: connection.pageId!,
-      pageAccessToken,
-      imageUrl,
-      caption: fullCaption,
-    });
+    if (postFormat === 'story') {
+      publishResult = await publishFacebookStory({
+        pageId: connection.pageId!,
+        pageAccessToken,
+        mediaUrl: imageUrl,
+        isVideo,
+      });
+    } else {
+      // Feed post (default)
+      publishResult = await publishToFacebookPage({
+        pageId: connection.pageId!,
+        pageAccessToken,
+        imageUrl,
+        caption: fullCaption,
+      });
+    }
   } else if (platform === 'instagram') {
     const igUserId = connection.platformUserId;
     if (!igUserId) {
@@ -96,12 +115,33 @@ export async function processPublishJob(
       return { postId, platform, ...(await result) };
     }
 
-    publishResult = await publishToInstagram({
-      igUserId,
-      pageAccessToken,
-      imageUrl,
-      caption: fullCaption,
-    });
+    if (postFormat === 'reel') {
+      if (!isVideo) {
+        const result = failPost(postId, 'REEL_REQUIRES_VIDEO', 'Instagram Reels require a video file.');
+        return { postId, platform, ...(await result) };
+      }
+      publishResult = await publishInstagramReel({
+        igUserId,
+        pageAccessToken,
+        videoUrl: imageUrl,
+        caption: fullCaption,
+      });
+    } else if (postFormat === 'story') {
+      publishResult = await publishInstagramStory({
+        igUserId,
+        pageAccessToken,
+        mediaUrl: imageUrl,
+        isVideo,
+      });
+    } else {
+      // Feed post (default)
+      publishResult = await publishToInstagram({
+        igUserId,
+        pageAccessToken,
+        imageUrl,
+        caption: fullCaption,
+      });
+    }
   } else {
     const result = failPost(postId, 'UNSUPPORTED_PLATFORM', `Platform '${platform}' is not yet supported for real publishing.`);
     return { postId, platform, ...(await result) };

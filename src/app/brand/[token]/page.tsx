@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, use } from 'react';
-import { Upload, Camera, Instagram, Facebook, Play, Check, Loader2, Sparkles, Image as ImageIcon, Video, ArrowRight, ChevronLeft, AlertCircle, ExternalLink, Pencil, X, Copy, Send } from 'lucide-react';
+import { Upload, Camera, Instagram, Facebook, Play, Check, Loader2, Sparkles, Image as ImageIcon, Video, ArrowRight, ChevronLeft, AlertCircle, ExternalLink, Pencil, X, Copy, Send, Clock, Calendar } from 'lucide-react';
 import { TokenWiseBadge } from '@royea/tokenwise/badge-react';
 import CopyPostModal from '@/components/CopyPostModal';
 
@@ -37,11 +37,42 @@ const PLATFORM_ICONS: Record<string, typeof Instagram> = {
   facebook: Facebook,
 };
 
-const FORMAT_OPTIONS = [
-  { id: 'post', label: 'Post', labelHe: 'פוסט', icon: ImageIcon, desc: 'Photo or video in the feed', descHe: 'תמונה או וידאו בפיד' },
-  { id: 'story', label: 'Story', labelHe: 'סטורי', icon: Play, desc: '24-hour story', descHe: 'סטורי ל-24 שעות' },
-  { id: 'reel', label: 'Reel', labelHe: 'ריל', icon: Video, desc: 'Short-form video', descHe: 'וידאו קצר' },
-];
+interface PostTypeOption {
+  id: string;
+  label: string;
+  labelHe: string;
+  icon: typeof ImageIcon;
+  desc: string;
+  descHe: string;
+  requiresVideo?: boolean;
+}
+
+/** Post types available per platform */
+const PLATFORM_POST_TYPES: Record<string, PostTypeOption[]> = {
+  instagram: [
+    { id: 'post', label: 'Feed', labelHe: 'פיד', icon: ImageIcon, desc: 'Photo or video in the feed', descHe: 'תמונה או וידאו בפיד' },
+    { id: 'reel', label: 'Reel', labelHe: 'ריל', icon: Video, desc: 'Short-form vertical video', descHe: 'וידאו קצר אנכי', requiresVideo: true },
+    { id: 'story', label: 'Story', labelHe: 'סטורי', icon: Play, desc: '24-hour disappearing content', descHe: 'תוכן שנעלם אחרי 24 שעות' },
+  ],
+  facebook: [
+    { id: 'post', label: 'Feed', labelHe: 'פיד', icon: ImageIcon, desc: 'Post on your page', descHe: 'פוסט בדף שלך' },
+    { id: 'story', label: 'Story', labelHe: 'סטורי', icon: Play, desc: '24-hour story', descHe: 'סטורי ל-24 שעות' },
+  ],
+};
+
+/** Get the effective format — for multi-platform we use the most common selection */
+function resolveFormat(postTypes: Record<string, string>): string {
+  const values = Object.values(postTypes);
+  if (values.length === 0) return 'post';
+  // Use the first platform's type as the "format" for caption generation
+  return values[0] || 'post';
+}
+
+/** Format a Date to local datetime-local input value */
+function toLocalDateTimeString(date: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 export default function BrandPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
@@ -61,7 +92,12 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
   // Format state
   const [format, setFormat] = useState<string>('post');
   const [platforms, setPlatforms] = useState<string[]>([]);
+  const [postTypes, setPostTypes] = useState<Record<string, string>>({}); // { instagram: 'reel', facebook: 'post' }
   const [customPrompt, setCustomPrompt] = useState('');
+
+  // Scheduling state
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [scheduledFor, setScheduledFor] = useState<string>('');
 
   // Caption state
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -146,7 +182,11 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
     setGeneratingCaptions(true);
     setError(null);
 
-    const requestBody = JSON.stringify({ brandToken: token, mediaId, format, platforms, customPrompt: customPrompt || undefined });
+    // Use the resolved format from per-platform post types
+    const effectiveFormat = resolveFormat(postTypes);
+    setFormat(effectiveFormat);
+
+    const requestBody = JSON.stringify({ brandToken: token, mediaId, format: effectiveFormat, platforms, customPrompt: customPrompt || undefined });
     setAiInputChars(requestBody.length);
     setAiCostStatus('thinking');
 
@@ -191,6 +231,19 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
     setStep('publishing');
     setError(null);
 
+    // Build scheduled time if enabled
+    let scheduledTime: string | undefined;
+    if (scheduleEnabled && scheduledFor) {
+      const dt = new Date(scheduledFor);
+      if (dt <= new Date()) {
+        setError(isHe ? 'זמן התזמון חייב להיות בעתיד' : 'Scheduled time must be in the future');
+        setStep('captions');
+        setPublishing(false);
+        return;
+      }
+      scheduledTime = dt.toISOString();
+    }
+
     try {
       const res = await fetch('/api/publish', {
         method: 'POST',
@@ -201,6 +254,8 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
           editedCaption: isEditing || editedCaption !== drafts.find((d) => d.id === selectedDraft)?.caption
             ? editedCaption
             : undefined,
+          postTypes, // per-platform post types
+          scheduledFor: scheduledTime,
         }),
       });
 
@@ -213,8 +268,14 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
         return;
       }
 
-      setPublishResults(data.results || []);
-      setStep('done');
+      if (data.scheduled) {
+        // Scheduled — go straight to done with a different message
+        setPublishResults([]);
+        setStep('done');
+      } else {
+        setPublishResults(data.results || []);
+        setStep('done');
+      }
     } catch {
       setError('Publish failed');
       setStep('captions');
@@ -233,21 +294,24 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
     setCustomPrompt('');
     setPublishResults([]);
     setAiCostStatus('idle');
+    setPostTypes({});
+    setScheduleEnabled(false);
+    setScheduledFor('');
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
       </div>
     );
   }
 
   if (error && !brandInfo) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
-          <p className="text-gray-500">{error}</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] p-4">
+        <div className="bg-[#111] border border-white/10 rounded-2xl p-8 max-w-md w-full text-center">
+          <p className="text-[#9ca3af]">{error}</p>
         </div>
       </div>
     );
@@ -256,21 +320,21 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
   if (!brandInfo) return null;
 
   const STYLE_LABELS: Record<string, { label: string; color: string }> = {
-    'on-brand': { label: isHe ? 'בסגנון שלך' : 'On-Brand', color: 'bg-violet-100 text-violet-700' },
-    'trendy': { label: isHe ? 'טרנדי' : 'Trendy', color: 'bg-amber-100 text-amber-700' },
-    'minimal': { label: isHe ? 'מינימלי' : 'Minimal', color: 'bg-gray-100 text-gray-700' },
+    'on-brand': { label: isHe ? 'בסגנון שלך' : 'On-Brand', color: 'bg-blue-500/10 text-blue-400' },
+    'trendy': { label: isHe ? 'טרנדי' : 'Trendy', color: 'bg-[#f59e0b]/10 text-[#f59e0b]' },
+    'minimal': { label: isHe ? 'מינימלי' : 'Minimal', color: 'bg-white/5 text-[#9ca3af]' },
   };
 
   const successResults = publishResults.filter((r) => r.success);
   const failedResults = publishResults.filter((r) => !r.success);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-8" dir={dir}>
+    <div className="min-h-screen bg-[#0a0a0a] pb-8" dir={dir}>
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-[#111] border-b border-white/10">
         <div className="max-w-lg mx-auto px-4 py-4 text-center">
-          <h1 className="font-bold text-gray-900 text-lg">{brandInfo.name}</h1>
-          <p className="text-xs text-gray-400 mt-0.5">PostPilot</p>
+          <h1 className="font-bold text-[#e5e5e5] text-lg">{brandInfo.name}</h1>
+          <p className="text-xs text-[#9ca3af]/50 mt-0.5">PostPilot</p>
         </div>
       </div>
 
@@ -278,7 +342,7 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
 
         {/* Error */}
         {error && (
-          <div className="bg-red-50 text-red-700 text-sm rounded-xl p-3 text-center flex items-center justify-center gap-2">
+          <div className="bg-[#ef4444]/10 text-[#ef4444] text-sm rounded-xl p-3 text-center flex items-center justify-center gap-2 border border-[#ef4444]/20">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             {error}
           </div>
@@ -286,8 +350,8 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
 
         {/* Step 1: Upload */}
         {step === 'upload' && (
-          <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 text-center">
+          <div className="bg-[#111] border border-white/10 rounded-2xl p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-[#e5e5e5] text-center">
               {isHe ? 'העלו תמונה או וידאו' : 'Upload photo or video'}
             </h2>
 
@@ -300,7 +364,7 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
             />
 
             {previewUrl ? (
-              <div className="relative rounded-xl overflow-hidden bg-gray-100">
+              <div className="relative rounded-xl overflow-hidden bg-[#0a0a0a]">
                 {mediaType === 'video' ? (
                   <video src={previewUrl} className="w-full max-h-80 object-contain" controls />
                 ) : (
@@ -308,7 +372,7 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
                   <img src={previewUrl} alt="Preview" className="w-full max-h-80 object-contain" />
                 )}
                 {uploading && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                     <Loader2 className="w-8 h-8 animate-spin text-white" />
                   </div>
                 )}
@@ -317,12 +381,12 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
               <div className="space-y-3">
                 <button
                   onClick={() => fileRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-3 py-12 border-2 border-dashed border-gray-200 rounded-2xl hover:border-violet-300 hover:bg-violet-50/50 transition-all"
+                  className="w-full flex items-center justify-center gap-3 py-12 border-2 border-dashed border-white/10 rounded-2xl hover:border-blue-500/30 hover:bg-blue-500/5 transition-all"
                 >
-                  <Upload className="w-8 h-8 text-gray-400" />
+                  <Upload className="w-8 h-8 text-[#9ca3af]" />
                   <div className="text-start">
-                    <p className="font-medium text-gray-700">{isHe ? 'בחרו קובץ' : 'Choose file'}</p>
-                    <p className="text-xs text-gray-400">{isHe ? 'תמונה או וידאו עד 10MB' : 'Photo or video, up to 10MB'}</p>
+                    <p className="font-medium text-[#e5e5e5]">{isHe ? 'בחרו קובץ' : 'Choose file'}</p>
+                    <p className="text-xs text-[#9ca3af]/60">{isHe ? 'תמונה או וידאו עד 10MB' : 'Photo or video, up to 10MB'}</p>
                   </div>
                 </button>
 
@@ -334,7 +398,7 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
                       fileRef.current.removeAttribute('capture');
                     }
                   }}
-                  className="w-full flex items-center justify-center gap-2 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-sm text-gray-600"
+                  className="w-full flex items-center justify-center gap-2 py-3 border border-white/10 rounded-xl hover:bg-white/5 transition-colors text-sm text-[#9ca3af]"
                 >
                   <Camera className="w-4 h-4" />
                   {isHe ? 'צלמו עכשיו' : 'Take photo/video'}
@@ -344,11 +408,11 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
           </div>
         )}
 
-        {/* Step 2: Format + Platforms */}
+        {/* Step 2: Format + Platforms + Post Types + Scheduling */}
         {step === 'format' && (
-          <div className="bg-white rounded-2xl shadow-lg p-6 space-y-5">
+          <div className="bg-[#111] border border-white/10 rounded-2xl p-6 space-y-5">
             {previewUrl && (
-              <div className="rounded-xl overflow-hidden bg-gray-100 max-h-48">
+              <div className="rounded-xl overflow-hidden bg-[#0a0a0a] max-h-48">
                 {mediaType === 'video' ? (
                   <video src={previewUrl} className="w-full max-h-48 object-contain" />
                 ) : (
@@ -358,37 +422,9 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
               </div>
             )}
 
+            {/* Platform selection */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">{isHe ? 'פורמט' : 'Format'}</h3>
-              <div className="grid grid-cols-3 gap-2">
-                {FORMAT_OPTIONS.map((opt) => {
-                  const Icon = opt.icon;
-                  const isVideo = mediaType === 'video';
-                  const disabled = opt.id === 'reel' && !isVideo;
-                  return (
-                    <button
-                      key={opt.id}
-                      onClick={() => !disabled && setFormat(opt.id)}
-                      disabled={disabled}
-                      className={`p-3 rounded-xl border text-center transition-all ${
-                        format === opt.id
-                          ? 'border-violet-500 bg-violet-50 ring-1 ring-violet-500'
-                          : disabled
-                          ? 'border-gray-100 opacity-40 cursor-not-allowed'
-                          : 'border-gray-200 hover:border-violet-200 hover:bg-violet-50/50'
-                      }`}
-                    >
-                      <Icon className={`w-5 h-5 mx-auto mb-1 ${format === opt.id ? 'text-violet-600' : 'text-gray-400'}`} />
-                      <p className="text-sm font-medium text-gray-900">{isHe ? opt.labelHe : opt.label}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{isHe ? opt.descHe : opt.desc}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">{isHe ? 'פרסום ב:' : 'Publish to:'}</h3>
+              <h3 className="text-sm font-semibold text-[#9ca3af] mb-2">{isHe ? 'פרסום ב:' : 'Publish to:'}</h3>
               <div className="flex gap-2">
                 {['instagram', 'facebook'].map((p) => {
                   const active = platforms.includes(p);
@@ -396,9 +432,17 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
                   return (
                     <button
                       key={p}
-                      onClick={() => setPlatforms(active ? platforms.filter(x => x !== p) : [...platforms, p])}
+                      onClick={() => {
+                        if (active) {
+                          setPlatforms(platforms.filter(x => x !== p));
+                          setPostTypes((prev) => { const next = { ...prev }; delete next[p]; return next; });
+                        } else {
+                          setPlatforms([...platforms, p]);
+                          setPostTypes((prev) => ({ ...prev, [p]: 'post' }));
+                        }
+                      }}
                       className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                        active ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-violet-200'
+                        active ? 'border-blue-500 bg-blue-500/10 text-blue-400' : 'border-white/10 text-[#9ca3af] hover:border-blue-500/30'
                       }`}
                     >
                       {active && <Check className="w-3.5 h-3.5" />}
@@ -408,29 +452,107 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
                   );
                 })}
               </div>
-              <p className="text-xs text-amber-600 mt-2">{isHe ? 'פרסום ישיר לפלטפורמות בקרוב. כיתובים נוצרים כרגיל.' : 'Direct publishing coming soon. Captions still generated normally.'}</p>
+            </div>
+
+            {/* Per-platform post type selectors */}
+            {platforms.map((p) => {
+              const types = PLATFORM_POST_TYPES[p] || [];
+              const selectedType = postTypes[p] || 'post';
+              const Icon = PLATFORM_ICONS[p];
+              return (
+                <div key={`type-${p}`}>
+                  <h3 className="text-sm font-semibold text-[#9ca3af] mb-2 flex items-center gap-1.5">
+                    {Icon && <Icon className="w-4 h-4" />}
+                    {p.charAt(0).toUpperCase() + p.slice(1)} — {isHe ? 'סוג פוסט' : 'Post Type'}
+                  </h3>
+                  <div className={`grid gap-2 ${types.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                    {types.map((opt) => {
+                      const TypeIcon = opt.icon;
+                      const isVideoRequired = opt.requiresVideo && mediaType !== 'video';
+                      return (
+                        <button
+                          key={opt.id}
+                          onClick={() => !isVideoRequired && setPostTypes((prev) => ({ ...prev, [p]: opt.id }))}
+                          disabled={isVideoRequired}
+                          className={`p-3 rounded-xl border text-center transition-all ${
+                            selectedType === opt.id
+                              ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500'
+                              : isVideoRequired
+                              ? 'border-white/5 opacity-40 cursor-not-allowed'
+                              : 'border-white/10 hover:border-blue-500/30 hover:bg-blue-500/5'
+                          }`}
+                        >
+                          <TypeIcon className={`w-5 h-5 mx-auto mb-1 ${selectedType === opt.id ? 'text-blue-400' : 'text-[#9ca3af]'}`} />
+                          <p className="text-sm font-medium text-[#e5e5e5]">{isHe ? opt.labelHe : opt.label}</p>
+                          <p className="text-xs text-[#9ca3af]/60 mt-0.5">{isHe ? opt.descHe : opt.desc}</p>
+                          {isVideoRequired && (
+                            <p className="text-xs text-[#ef4444]/60 mt-1">{isHe ? 'דורש וידאו' : 'Requires video'}</p>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Schedule toggle */}
+            <div>
+              <button
+                onClick={() => {
+                  setScheduleEnabled(!scheduleEnabled);
+                  if (!scheduleEnabled && !scheduledFor) {
+                    // Default to 1 hour from now
+                    const oneHour = new Date(Date.now() + 60 * 60 * 1000);
+                    setScheduledFor(toLocalDateTimeString(oneHour));
+                  }
+                }}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all w-full justify-center ${
+                  scheduleEnabled
+                    ? 'border-[#f59e0b] bg-[#f59e0b]/10 text-[#f59e0b]'
+                    : 'border-white/10 text-[#9ca3af] hover:border-[#f59e0b]/30'
+                }`}
+              >
+                <Clock className="w-4 h-4" />
+                {scheduleEnabled
+                  ? (isHe ? 'פרסום מתוזמן פעיל' : 'Scheduled publishing ON')
+                  : (isHe ? 'תזמן לפרסום מאוחר' : 'Schedule for later')}
+              </button>
+
+              {scheduleEnabled && (
+                <div className="mt-3 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-[#9ca3af]" />
+                  <input
+                    type="datetime-local"
+                    value={scheduledFor}
+                    onChange={(e) => setScheduledFor(e.target.value)}
+                    min={toLocalDateTimeString(new Date())}
+                    className="flex-1 px-3 py-2 bg-[#0a0a0a] border border-white/10 rounded-xl text-sm text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
+                  />
+                </div>
+              )}
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">{isHe ? 'הערות (אופציונלי)' : 'Notes (optional)'}</h3>
+              <h3 className="text-sm font-semibold text-[#9ca3af] mb-2">{isHe ? 'הערות (אופציונלי)' : 'Notes (optional)'}</h3>
               <textarea
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
                 placeholder={isHe ? 'למשל: "פוסט על ההנחה החדשה שלנו"' : 'e.g. "Post about our new sale"'}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full px-4 py-3 bg-[#0a0a0a] border border-white/10 rounded-xl text-sm text-[#e5e5e5] placeholder-[#9ca3af]/50 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 rows={2}
                 dir={isHe ? 'rtl' : 'ltr'}
               />
             </div>
 
             <div className="flex gap-3">
-              <button onClick={() => setStep('upload')} className="px-4 py-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+              <button onClick={() => setStep('upload')} className="px-4 py-3 rounded-xl border border-white/10 text-[#9ca3af] hover:bg-white/5 transition-colors">
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={handleGenerateCaptions}
                 disabled={platforms.length === 0 || generatingCaptions}
-                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 text-white font-semibold transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-semibold transition-colors"
               >
                 {generatingCaptions ? (
                   <><Loader2 className="w-5 h-5 animate-spin" /> {isHe ? '...מייצר' : 'Generating...'}</>
@@ -452,7 +574,7 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
         {step === 'captions' && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-[#e5e5e5]">
                 {isHe ? 'בחרו סגנון' : 'Pick your style'}
               </h2>
               {aiCostStatus === 'done' && (
@@ -467,18 +589,18 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
                 <button
                   key={draft.id}
                   onClick={() => setSelectedDraft(draft.id)}
-                  className={`w-full text-start bg-white rounded-2xl shadow-sm p-5 border-2 transition-all ${
-                    selected ? 'border-violet-500 ring-2 ring-violet-200' : 'border-transparent hover:border-violet-200'
+                  className={`w-full text-start bg-[#111] rounded-2xl p-5 border-2 transition-all ${
+                    selected ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-white/5 hover:border-blue-500/30'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${style.color}`}>{style.label}</span>
-                    {selected && <Check className="w-5 h-5 text-violet-600" />}
+                    {selected && <Check className="w-5 h-5 text-blue-400" />}
                   </div>
-                  <p className="text-sm text-gray-800 leading-relaxed mb-2" dir={isHe ? 'rtl' : 'ltr'}>{draft.caption}</p>
+                  <p className="text-sm text-[#e5e5e5]/80 leading-relaxed mb-2" dir={isHe ? 'rtl' : 'ltr'}>{draft.caption}</p>
                   <div className="flex flex-wrap gap-1">
                     {draft.hashtags.map((tag, i) => (
-                      <span key={i} className="text-xs text-violet-500">#{tag}</span>
+                      <span key={i} className="text-xs text-blue-400/70">#{tag}</span>
                     ))}
                   </div>
                 </button>
@@ -487,9 +609,9 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
 
             {/* Caption editor (shown when draft is selected) */}
             {selectedDraft && (
-              <div className="bg-white rounded-2xl shadow-sm p-5 border border-gray-200 space-y-3">
+              <div className="bg-[#111] rounded-2xl p-5 border border-white/10 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                  <h3 className="text-sm font-semibold text-[#9ca3af] flex items-center gap-1.5">
                     <Pencil className="w-4 h-4" />
                     {isHe ? 'ערכו את הכיתוב' : 'Edit caption'}
                   </h3>
@@ -500,7 +622,7 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
                         if (draft) setEditedCaption(draft.caption);
                         setIsEditing(false);
                       }}
-                      className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"
+                      className="text-xs text-[#9ca3af]/60 hover:text-[#9ca3af] flex items-center gap-1"
                     >
                       <X className="w-3 h-3" /> {isHe ? 'איפוס' : 'Reset'}
                     </button>
@@ -509,12 +631,12 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
                 <textarea
                   value={editedCaption}
                   onChange={(e) => { setEditedCaption(e.target.value); setIsEditing(true); }}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500 min-h-[100px]"
+                  className="w-full px-4 py-3 bg-[#0a0a0a] border border-white/10 rounded-xl text-sm text-[#e5e5e5] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px]"
                   dir={isHe ? 'rtl' : 'ltr'}
                   rows={4}
                 />
                 {isEditing && (
-                  <p className="text-xs text-amber-600">
+                  <p className="text-xs text-[#f59e0b]">
                     {isHe ? 'הכיתוב שונה מהמקור' : 'Caption modified from original'}
                   </p>
                 )}
@@ -522,7 +644,7 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
             )}
 
             <div className="flex gap-3 pt-2">
-              <button onClick={() => setStep('format')} className="px-4 py-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+              <button onClick={() => setStep('format')} className="px-4 py-3 rounded-xl border border-white/10 text-[#9ca3af] hover:bg-white/5 transition-colors">
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
@@ -531,7 +653,7 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
                   setShowCopyPostModal(true);
                 }}
                 disabled={!selectedDraft}
-                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white font-semibold transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#22c55e] hover:bg-[#16a34a] disabled:bg-white/10 disabled:text-[#9ca3af] text-white font-semibold transition-colors"
               >
                 <Copy className="w-5 h-5" />
                 {isHe ? 'העתק ופרסם' : 'Copy & Post'}
@@ -539,7 +661,7 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
               <button
                 onClick={handlePublish}
                 disabled={!selectedDraft || publishing}
-                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:bg-gray-300 text-white font-semibold transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-white/10 disabled:text-[#9ca3af] text-white font-semibold transition-colors"
               >
                 {publishing ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -554,12 +676,12 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
 
         {/* Step 4: Publishing */}
         {step === 'publishing' && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center space-y-4">
-            <Loader2 className="w-12 h-12 animate-spin text-violet-600 mx-auto" />
-            <h2 className="text-lg font-semibold text-gray-900">
+          <div className="bg-[#111] border border-white/10 rounded-2xl p-8 text-center space-y-4">
+            <Loader2 className="w-12 h-12 animate-spin text-blue-400 mx-auto" />
+            <h2 className="text-lg font-semibold text-[#e5e5e5]">
               {isHe ? 'מפרסם...' : 'Publishing...'}
             </h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-[#9ca3af]">
               {isHe ? 'שולח לפלטפורמות שנבחרו' : 'Sending to selected platforms'}
             </p>
           </div>
@@ -567,18 +689,26 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
 
         {/* Step 5: Done */}
         {step === 'done' && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 space-y-5">
+          <div className="bg-[#111] border border-white/10 rounded-2xl p-8 space-y-5">
             <div className="text-center space-y-3">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                <Check className="w-8 h-8 text-green-600" />
+              <div className={`w-16 h-16 ${scheduleEnabled ? 'bg-[#f59e0b]/10 border-[#f59e0b]/20' : 'bg-[#22c55e]/10 border-[#22c55e]/20'} border rounded-full flex items-center justify-center mx-auto`}>
+                {scheduleEnabled ? (
+                  <Clock className="w-8 h-8 text-[#f59e0b]" />
+                ) : (
+                  <Check className="w-8 h-8 text-[#22c55e]" />
+                )}
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">
-                {publishResults.length > 0
+              <h2 className="text-xl font-semibold text-[#e5e5e5]">
+                {scheduleEnabled
+                  ? (isHe ? 'תוזמן!' : 'Scheduled!')
+                  : publishResults.length > 0
                   ? (isHe ? 'פורסם!' : 'Published!')
                   : (isHe ? 'הכיתוב הועתק!' : 'Caption Copied!')}
               </h2>
-              <p className="text-sm text-gray-500">
-                {publishResults.length > 0
+              <p className="text-sm text-[#9ca3af]">
+                {scheduleEnabled
+                  ? (isHe ? `הפוסט יפורסם ב-${new Date(scheduledFor).toLocaleString(isHe ? 'he-IL' : 'en-US')}` : `Your post will be published on ${new Date(scheduledFor).toLocaleString('en-US')}`)
+                  : publishResults.length > 0
                   ? (isHe ? 'הפוסט פורסם בהצלחה.' : 'Your post has been published.')
                   : (isHe ? 'הדביקו את הכיתוב בפלטפורמה שלכם.' : 'Paste it into your platform.')}
               </p>
@@ -588,17 +718,17 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
             {publishResults.length > 0 && (
               <div className="space-y-2">
                 {publishResults.filter((r) => r.success).map((r) => (
-                  <div key={r.postId} className="flex items-center justify-between bg-green-50 rounded-xl p-3 text-sm">
-                    <span className="text-green-700 font-medium capitalize">{r.platform}</span>
+                  <div key={r.postId} className="flex items-center justify-between bg-[#22c55e]/10 rounded-xl p-3 text-sm border border-[#22c55e]/20">
+                    <span className="text-[#22c55e] font-medium capitalize">{r.platform}</span>
                     {r.platformUrl && (
-                      <a href={r.platformUrl} target="_blank" rel="noopener noreferrer" className="text-green-600 flex items-center gap-1 hover:underline">
+                      <a href={r.platformUrl} target="_blank" rel="noopener noreferrer" className="text-[#22c55e] flex items-center gap-1 hover:underline">
                         <ExternalLink className="w-3 h-3" /> View
                       </a>
                     )}
                   </div>
                 ))}
                 {publishResults.filter((r) => !r.success).map((r) => (
-                  <div key={r.postId} className="bg-red-50 rounded-xl p-3 text-sm text-red-700">
+                  <div key={r.postId} className="bg-[#ef4444]/10 border border-[#ef4444]/20 rounded-xl p-3 text-sm text-[#ef4444]">
                     <span className="font-medium capitalize">{r.platform}:</span> {r.errorMessage || 'Failed'}
                   </div>
                 ))}
@@ -607,7 +737,7 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
 
             <button
               onClick={resetFlow}
-              className="w-full bg-violet-600 hover:bg-violet-700 text-white font-medium px-6 py-3 rounded-xl transition-colors"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors"
             >
               {isHe ? 'פוסט נוסף' : 'Create Another Post'}
             </button>

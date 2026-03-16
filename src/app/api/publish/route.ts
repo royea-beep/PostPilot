@@ -19,7 +19,7 @@ import { emitServerEvent } from '@/lib/learning';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { draftId, brandToken, editedCaption, manualPost } = body;
+    const { draftId, brandToken, editedCaption, manualPost, postTypes, scheduledFor } = body;
     const isDemo = req.nextUrl.searchParams.get('demo') === 'true' || body.demo === true;
 
     if (!draftId || !brandToken) {
@@ -168,7 +168,19 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Create publish jobs (Post records) with QUEUED status
+    // Determine if this is a scheduled post
+    const isScheduled = !!scheduledFor;
+    const scheduledDate = scheduledFor ? new Date(scheduledFor) : null;
+
+    // Validate scheduled time is in the future
+    if (scheduledDate && scheduledDate <= new Date()) {
+      return NextResponse.json({ error: 'Scheduled time must be in the future' }, { status: 400 });
+    }
+
+    // Per-platform post types (e.g. { instagram: 'reel', facebook: 'post' })
+    const platformPostTypes = (postTypes && typeof postTypes === 'object') ? postTypes as Record<string, string> : {};
+
+    // Create publish jobs (Post records) with QUEUED or SCHEDULED status
     const skippedPlatforms: string[] = [];
     const posts = await Promise.all(
       targetPlatforms.map(async (platform) => {
@@ -178,6 +190,9 @@ export async function POST(req: NextRequest) {
           return null;
         }
 
+        // Use per-platform post type if provided, otherwise fall back to draft format
+        const postFormat = platformPostTypes[platform] || draft.format;
+
         return prisma.post.create({
           data: {
             brandId: brand.id,
@@ -186,9 +201,10 @@ export async function POST(req: NextRequest) {
             connectionId: connection.id,
             caption: finalCaption,
             hashtags: draft.hashtags,
-            format: draft.format,
+            format: postFormat,
             platform,
-            status: 'QUEUED',
+            status: isScheduled ? 'SCHEDULED' : 'QUEUED',
+            scheduledFor: scheduledDate,
           },
         });
       }),
@@ -201,6 +217,29 @@ export async function POST(req: NextRequest) {
         { error: 'No connected platforms found for selected targets. Please connect an account first.', skippedPlatforms },
         { status: 400 },
       );
+    }
+
+    // If scheduled, return immediately — the cron will handle publishing
+    if (isScheduled) {
+      await prisma.auditLog.create({
+        data: {
+          brandId: brand.id,
+          action: 'POST_SCHEDULED',
+          metadata: JSON.stringify({
+            draftId,
+            platforms: targetPlatforms,
+            scheduledFor: scheduledDate?.toISOString(),
+            postIds: validPosts.map((p) => p.id),
+          }),
+        },
+      });
+
+      return NextResponse.json({
+        scheduled: true,
+        scheduledFor: scheduledDate?.toISOString(),
+        postIds: validPosts.map((p) => p.id),
+        ...(skippedPlatforms.length > 0 ? { skippedPlatforms } : {}),
+      });
     }
 
     // Process each publish job through the real platform API

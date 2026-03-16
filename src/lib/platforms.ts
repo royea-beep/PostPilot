@@ -14,6 +14,41 @@
 
 export type PlatformKey = 'instagram' | 'facebook' | 'tiktok';
 
+/** Post type per platform (maps to the `format` field on Post/PostDraft). */
+export type PostType = 'post' | 'reel' | 'story';
+
+export interface PlatformPostType {
+  id: PostType;
+  label: string;
+  labelHe: string;
+  description: string;
+  descriptionHe: string;
+  requiresVideo?: boolean; // Only allow if media is video
+}
+
+/** Returns the allowed post types for each platform. */
+export function getPostTypesForPlatform(platform: PlatformKey): PlatformPostType[] {
+  switch (platform) {
+    case 'instagram':
+      return [
+        { id: 'post', label: 'Feed Post', labelHe: 'פוסט בפיד', description: 'Photo or video in the feed', descriptionHe: 'תמונה או וידאו בפיד' },
+        { id: 'reel', label: 'Reel', labelHe: 'ריל', description: 'Short-form vertical video', descriptionHe: 'וידאו קצר אנכי', requiresVideo: true },
+        { id: 'story', label: 'Story', labelHe: 'סטורי', description: '24-hour disappearing content', descriptionHe: 'תוכן שנעלם אחרי 24 שעות' },
+      ];
+    case 'facebook':
+      return [
+        { id: 'post', label: 'Feed Post', labelHe: 'פוסט בפיד', description: 'Post on your page', descriptionHe: 'פוסט בדף שלך' },
+        { id: 'story', label: 'Story', labelHe: 'סטורי', description: '24-hour story', descriptionHe: 'סטורי ל-24 שעות' },
+      ];
+    case 'tiktok':
+      return [
+        { id: 'post', label: 'Video', labelHe: 'וידאו', description: 'TikTok video', descriptionHe: 'וידאו טיקטוק', requiresVideo: true },
+      ];
+    default:
+      return [];
+  }
+}
+
 export interface PlatformConfig {
   key: PlatformKey;
   label: string;
