@@ -11,8 +11,20 @@ import { CookieConsent } from '@/components/CookieConsent';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'PostPilot — AI Social Media Copilot',
-  description: 'Upload content, pick a style, publish everywhere. AI learns your voice.',
+  title: 'PostPilot — Social Media Scheduling',
+  description: 'Schedule and manage social media posts across platforms with AI-powered captions',
+  openGraph: {
+    title: 'PostPilot — Social Media Scheduling',
+    description: 'Schedule and manage social media posts across platforms with AI-powered captions',
+    url: 'https://postpilot.ftable.co.il',
+    siteName: 'PostPilot',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'PostPilot — Social Media Scheduling',
+    description: 'Schedule and manage social media posts across platforms with AI-powered captions',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
