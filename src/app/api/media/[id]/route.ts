@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
-    console.error('Media serve error:', err);
+    if (process.env.NODE_ENV !== 'production') console.error('Media serve error:', err);
     return NextResponse.json({ error: 'Failed to serve media' }, { status: 500 });
   }
 }

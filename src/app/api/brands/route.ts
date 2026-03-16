@@ -69,7 +69,7 @@ export const POST = withAuth((async (req: NextRequest, userId: string) => {
     if (err instanceof Error && err.name === 'ZodError') {
       return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
     }
-    console.error('Create brand error:', err);
+    if (process.env.NODE_ENV !== 'production') console.error('Create brand error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }) as unknown as import('@royea/shared-utils/auth-guard').AuthRouteHandler) as unknown as (req: NextRequest, _context: RouteContext) => Promise<NextResponse>;

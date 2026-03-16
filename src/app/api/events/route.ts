@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[api/events]', err);
+    if (process.env.NODE_ENV !== 'production') console.error('[api/events]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

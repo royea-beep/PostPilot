@@ -169,10 +169,14 @@ export async function POST(req: NextRequest) {
     });
 
     // Create publish jobs (Post records) with QUEUED status
+    const skippedPlatforms: string[] = [];
     const posts = await Promise.all(
       targetPlatforms.map(async (platform) => {
         const connection = connections.find((c) => c.platform === platform);
-        if (!connection) return null;
+        if (!connection) {
+          skippedPlatforms.push(platform);
+          return null;
+        }
 
         return prisma.post.create({
           data: {
@@ -194,7 +198,7 @@ export async function POST(req: NextRequest) {
 
     if (validPosts.length === 0) {
       return NextResponse.json(
-        { error: 'No connected platforms found for selected targets. Please connect an account first.' },
+        { error: 'No connected platforms found for selected targets. Please connect an account first.', skippedPlatforms },
         { status: 400 },
       );
     }
@@ -235,9 +239,9 @@ export async function POST(req: NextRequest) {
 
     // Update Style DNA in background
     if (successCount > 0) {
-      analyzeAndUpdateStyleProfile(brand.id).catch((err) =>
-        console.error('Style analysis failed:', err),
-      );
+      analyzeAndUpdateStyleProfile(brand.id).catch((err) => {
+        if (process.env.NODE_ENV !== 'production') console.error('Style analysis failed:', err);
+      });
     }
 
     // Learning hook: postPublished for each successful platform
@@ -275,9 +279,10 @@ export async function POST(req: NextRequest) {
         success: successCount,
         failed: failedCount,
       },
+      ...(skippedPlatforms.length > 0 ? { skippedPlatforms } : {}),
     });
   } catch (err) {
-    console.error('Publish error:', err);
+    if (process.env.NODE_ENV !== 'production') console.error('Publish error:', err);
     return NextResponse.json({ error: 'Publish failed' }, { status: 500 });
   }
 }

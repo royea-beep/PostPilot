@@ -149,7 +149,7 @@ export async function GET(
       `${appUrl}/platforms?connected=${platform}&brandId=${state.brandId}`,
     );
   } catch (err) {
-    console.error(`OAuth callback error for ${platform}:`, err);
+    if (process.env.NODE_ENV !== 'production') console.error(`OAuth callback error for ${platform}:`, err);
     return redirectWithError(
       err instanceof Error ? err.message : 'Token exchange failed',
     );

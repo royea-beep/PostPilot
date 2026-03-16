@@ -30,7 +30,7 @@ export const POST = withAuth((async (req: NextRequest, userId: string) => {
 
     return NextResponse.json({ url });
   } catch (err) {
-    console.error('LemonSqueezy checkout error:', err);
+    if (process.env.NODE_ENV !== 'production') console.error('LemonSqueezy checkout error:', err);
     return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 });
   }
 }) as unknown as import('@royea/shared-utils/auth-guard').AuthRouteHandler) as unknown as (req: NextRequest, _context: RouteContext) => Promise<NextResponse>;

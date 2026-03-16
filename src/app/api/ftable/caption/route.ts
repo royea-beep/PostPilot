@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       hashtags: option.hashtags,
     });
   } catch (err) {
-    console.error('ftable caption error:', err);
+    if (process.env.NODE_ENV !== 'production') console.error('ftable caption error:', err);
     return NextResponse.json({ error: 'Failed to generate caption' }, { status: 500 });
   }
 }

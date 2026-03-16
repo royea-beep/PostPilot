@@ -41,7 +41,7 @@ export const POST = withAuth((async (req: NextRequest, userId: string) => {
 
     return NextResponse.json(styleProfile);
   } catch (err) {
-    console.error('Style analysis error:', err);
+    if (process.env.NODE_ENV !== 'production') console.error('Style analysis error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }) as unknown as import('@royea/shared-utils/auth-guard').AuthRouteHandler) as unknown as (req: NextRequest, context: RouteContext) => Promise<NextResponse>;

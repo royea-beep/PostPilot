@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof Error && err.name === 'ZodError') {
       return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
     }
-    console.error('Register error:', err);
+    if (process.env.NODE_ENV !== 'production') console.error('Register error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

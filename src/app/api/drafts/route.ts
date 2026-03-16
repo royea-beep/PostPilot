@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       aiUsage: result.aiUsage,
     });
   } catch (err) {
-    console.error('Drafts error:', err);
+    if (process.env.NODE_ENV !== 'production') console.error('Drafts error:', err);
     return NextResponse.json({ error: 'Failed to generate captions' }, { status: 500 });
   }
 }

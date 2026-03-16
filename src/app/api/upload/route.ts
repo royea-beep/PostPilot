@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       sizeBytes: upload.sizeBytes,
     }, { status: 201 });
   } catch (err) {
-    console.error('Upload error:', err);
+    if (process.env.NODE_ENV !== 'production') console.error('Upload error:', err);
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 }
