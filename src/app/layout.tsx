@@ -8,6 +8,7 @@ import { ProjectLearner } from '@/components/ProjectLearner';
 import { ShareButton } from '@/components/ShareButton';
 import { BugReporterInit } from '@/components/BugReporterInit';
 import { ErrorLoggerInit } from '@/components/ErrorLoggerInit';
+import { FeedbackWidget } from '@/components/FeedbackWidget';
 import { CookieConsent } from '@/components/CookieConsent';
 import './globals.css';
 
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CookieConsent />
         <ShareButton />
         <BugReporterInit />
+        <FeedbackWidget appName="postpilot" />
         <ErrorLoggerInit />
       </body>
     </html>
