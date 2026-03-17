@@ -42,7 +42,9 @@ export async function GET(req: NextRequest) {
     }
 
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
-    const results: Array<{ postId: string; platform: string; success: boolean; error?: string }> = [];
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY_MS = 5 * 60 * 1000; // 5 minutes
+    const results: Array<{ postId: string; platform: string; success: boolean; error?: string; retried?: boolean }> = [];
 
     for (const post of scheduledPosts) {
       // Set status to QUEUED so processPublishJob picks it up correctly
@@ -52,15 +54,9 @@ export async function GET(req: NextRequest) {
       });
 
       const result = await processPublishJob(post.id, appUrl);
-      results.push({
-        postId: post.id,
-        platform: result.platform,
-        success: result.success,
-        error: result.errorMessage,
-      });
 
-      // Increment monthly usage counter for successful publishes
       if (result.success) {
+        // Increment monthly usage counter for successful publishes
         await prisma.user.update({
           where: { id: post.brand.user.id },
           data: { postsThisMonth: { increment: 1 } },
@@ -70,11 +66,53 @@ export async function GET(req: NextRequest) {
           platform: result.platform,
           scheduled: true,
         });
+
+        results.push({
+          postId: post.id,
+          platform: result.platform,
+          success: true,
+        });
+      } else {
+        // Retry logic: if under max retries, reschedule for 5 min later
+        // processPublishJob already incremented retryCount, so read the current value
+        const updatedPost = await prisma.post.findUnique({
+          where: { id: post.id },
+          select: { retryCount: true },
+        });
+
+        if (updatedPost && updatedPost.retryCount < MAX_RETRIES) {
+          // Reschedule: set back to SCHEDULED with a 5-minute delay
+          await prisma.post.update({
+            where: { id: post.id },
+            data: {
+              status: 'SCHEDULED',
+              scheduledFor: new Date(Date.now() + RETRY_DELAY_MS),
+            },
+          });
+
+          results.push({
+            postId: post.id,
+            platform: result.platform,
+            success: false,
+            error: result.errorMessage,
+            retried: true,
+          });
+        } else {
+          // Max retries reached — leave as FAILED
+          results.push({
+            postId: post.id,
+            platform: result.platform,
+            success: false,
+            error: result.errorMessage,
+            retried: false,
+          });
+        }
       }
     }
 
     const successCount = results.filter((r) => r.success).length;
-    const failedCount = results.filter((r) => !r.success).length;
+    const retriedCount = results.filter((r) => !r.success && r.retried).length;
+    const failedCount = results.filter((r) => !r.success && !r.retried).length;
 
     // Audit log
     await prisma.auditLog.create({
@@ -83,6 +121,7 @@ export async function GET(req: NextRequest) {
         metadata: JSON.stringify({
           processed: results.length,
           success: successCount,
+          retried: retriedCount,
           failed: failedCount,
           results,
         }),
@@ -92,6 +131,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       processed: results.length,
       success: successCount,
+      retried: retriedCount,
       failed: failedCount,
       results,
     });
