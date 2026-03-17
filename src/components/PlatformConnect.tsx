@@ -94,7 +94,6 @@ const PLATFORMS: PlatformMeta[] = [
     borderColor: 'border-white/10',
     hoverColor: 'hover:bg-white/10',
     icon: <Music2 className="w-6 h-6" />,
-    comingSoon: true,
   },
 ];
 
@@ -420,31 +419,6 @@ export function PlatformConnect({ brandId }: PlatformConnectProps) {
 
       {/* Platform cards */}
       {PLATFORMS.map((p) => {
-        // TikTok: always show as Coming Soon, skip connection logic
-        if (p.comingSoon) {
-          return (
-            <div
-              key={p.key}
-              className="rounded-xl border p-5 transition-all bg-[#111] border-white/10 opacity-60"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`${p.color}`}>{p.icon}</div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-[#e5e5e5]">{p.label}</h3>
-                      <span className="inline-flex items-center text-xs font-medium text-[#9ca3af] bg-white/5 px-2 py-0.5 rounded-full">
-                        Coming Soon
-                      </span>
-                    </div>
-                    <p className="text-xs text-[#9ca3af]/60 mt-0.5">TikTok integration is not yet available.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        }
-
         const conn = getConnection(p.key);
         const isActive = conn?.status === 'ACTIVE' && !conn.isExpired;
         const isConnected = conn?.status === 'CONNECTED' && !conn.isExpired;

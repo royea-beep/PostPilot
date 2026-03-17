@@ -15,6 +15,7 @@ import {
   publishFacebookStory,
   type PublishResult,
 } from './meta-publish.service';
+import { publishToTikTok, type TikTokPublishResult } from './tiktok-publish.service';
 
 export interface PublishJobResult {
   postId: string;
@@ -142,6 +143,43 @@ export async function processPublishJob(
         caption: fullCaption,
       });
     }
+  } else if (platform === 'tiktok') {
+    if (!isVideo) {
+      const result = failPost(postId, 'TIKTOK_REQUIRES_VIDEO', 'TikTok publishing requires a video file.');
+      return { postId, platform, ...(await result) };
+    }
+
+    // TikTok uses the user access token directly (no page token concept)
+    // Decrypt the user access token from the connection
+    let tiktokAccessToken: string;
+    try {
+      tiktokAccessToken = decrypt(
+        connection.encryptedAccessToken!,
+        connection.iv!,
+        connection.authTag!,
+      );
+    } catch {
+      const result = failPost(postId, 'DECRYPT_FAILED', 'Failed to decrypt TikTok token. Please reconnect.');
+      return { postId, platform, ...(await result) };
+    }
+
+    const tiktokResult: TikTokPublishResult = await publishToTikTok({
+      accessToken: tiktokAccessToken,
+      videoUrl: imageUrl,
+      caption: fullCaption,
+    });
+
+    // Map TikTokPublishResult to the common PublishResult shape
+    publishResult = {
+      success: tiktokResult.success,
+      platformPostId: tiktokResult.publishId,
+      platformUrl: tiktokResult.publishId
+        ? `https://www.tiktok.com/@user/video/${tiktokResult.publishId}`
+        : undefined,
+      errorCode: tiktokResult.errorCode,
+      errorMessage: tiktokResult.errorMessage,
+      rawResponse: tiktokResult.rawResponse,
+    };
   } else {
     const result = failPost(postId, 'UNSUPPORTED_PLATFORM', `Platform '${platform}' is not yet supported for real publishing.`);
     return { postId, platform, ...(await result) };
