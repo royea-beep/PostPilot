@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@royea/shared-utils/auth-context';
-import { Rocket, Plus, Copy, Check, ExternalLink, LogOut, Users, ImageIcon, BarChart3, Sparkles, CreditCard, FlaskConical } from 'lucide-react';
+import { Rocket, Plus, Copy, Check, ExternalLink, LogOut, Users, ImageIcon, BarChart3, Sparkles, CreditCard, FlaskConical, TrendingUp } from 'lucide-react';
 
 interface Brand {
   id: string;
@@ -160,6 +160,9 @@ export default function DashboardPage() {
             <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
               <Plus className="w-4 h-4" /> New Brand
             </button>
+            <a href="/analytics" className="text-[#9ca3af] hover:text-[#e5e5e5] p-1.5 rounded-lg hover:bg-white/5" title="Analytics">
+              <TrendingUp className="w-4 h-4" />
+            </a>
             <a href="/billing" className="text-[#9ca3af] hover:text-[#e5e5e5] p-1.5 rounded-lg hover:bg-white/5" title="Billing">
               <CreditCard className="w-4 h-4" />
             </a>
