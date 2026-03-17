@@ -32,6 +32,18 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="he" dir="rtl" suppressHydrationWarning>
+      <head>
+        <link rel="canonical" href="https://postpilot.ftable.co.il" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'SoftwareApplication',
+          name: 'PostPilot',
+          url: 'https://postpilot.ftable.co.il',
+          description: 'Schedule and manage social media posts with AI-powered captions',
+          applicationCategory: 'SocialNetworkingApplication',
+          offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+        }) }} />
+      </head>
       <body className="min-h-screen antialiased">
         <LanguageProvider>
           <EventsQueueProvider>
