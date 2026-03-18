@@ -77,9 +77,15 @@ export async function POST(req: NextRequest) {
       });
 
   if (!brand) {
+    // Return 200 so ftable-editor shows a friendly message, not an error
     return NextResponse.json(
-      { error: 'Brand not found. Pass brand_token or create a "Feature Table" brand.' },
-      { status: 404 },
+      {
+        ok: false,
+        posts_created: 0,
+        note: 'No brand found. Create a "Feature Table" brand at postpilot.ftable.co.il, then pass brand_token in the webhook payload.',
+        setup_url: 'https://postpilot.ftable.co.il/register',
+      },
+      { status: 200 },
     );
   }
 
