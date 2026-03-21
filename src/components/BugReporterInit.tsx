@@ -1,31 +1,20 @@
 'use client';
 
-import { useEffect } from 'react';
+import { BugReporterButton } from './BugReporterModal';
 
 export function BugReporterInit() {
-  useEffect(() => {
-    // PostPilot uses Neon/Prisma, not Supabase.
-    // Bug reporter sends directly to the analyzer Supabase project.
-    const url = process.env.NEXT_PUBLIC_BUG_REPORTER_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_BUG_REPORTER_SUPABASE_KEY;
-    if (!url || !key) return;
+  const url = process.env.NEXT_PUBLIC_BUG_REPORTER_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_BUG_REPORTER_SUPABASE_KEY;
+  if (!url || !key) return null;
 
-    import('../../../analyzer-standalone/packages/bug-reporter').then(({ initBugReporter }) => {
-      initBugReporter({
-        supabaseUrl: url,
-        supabaseKey: key,
-        projectName: 'postpilot',
-        version: '1.0.1',
-        position: 'bottom-left',
-      });
-    });
-
-    return () => {
-      import('../../../analyzer-standalone/packages/bug-reporter').then(({ destroyBugReporter }) => {
-        destroyBugReporter();
-      });
-    };
-  }, []);
-
-  return null;
+  return (
+    <BugReporterButton options={{
+      supabaseUrl: url,
+      supabaseAnonKey: key,
+      projectName: 'postpilot',
+      appVersion: '1.0.5',
+      githubRepo: 'royea-beep/PostPilot',
+      language: 'he',
+    }} />
+  );
 }

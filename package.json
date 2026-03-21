@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "next dev",
+    "dev": "cross-env NODE_OPTIONS=--max-old-space-size=512 next dev -p 3003",
     "build": "next build --webpack",
     "start": "next start",
     "postinstall": "prisma generate"
@@ -23,6 +23,7 @@
     "@royea/shared-utils": "file:./packages/shared-utils",
     "@royea/tokenwise": "^0.4.0",
     "@royea/url-guard": "file:./packages/url-guard",
+    "@supabase/supabase-js": "^2.99.3",
     "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "^25.3.5",
     "@types/react": "^19.2.14",
@@ -43,6 +44,7 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.10"
+    "@types/jsonwebtoken": "^9.0.10",
+    "cross-env": "^7.0.3"
   }
 }
