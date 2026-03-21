@@ -1,11 +1,11 @@
 /**
  * Payment provider for PostPilot.
- * Uses LemonSqueezy (works from Israel, acts as Merchant of Record).
+ * Uses LemonSqueezy via @royea/shared-utils/billing-provider (no LS SDK dep for checkout).
  */
 
+import { createLemonSqueezyCheckout } from '@royea/shared-utils/billing-provider';
 import {
   lemonSqueezySetup,
-  createCheckout,
   getSubscription,
   cancelSubscription,
 } from '@lemonsqueezy/lemonsqueezy.js';
@@ -62,35 +62,21 @@ export async function createCheckoutUrl(opts: {
   name: string;
   successUrl: string;
 }): Promise<string> {
-  initLS();
-
   const planConfig = PLANS[opts.plan];
   if (!('variantId' in planConfig) || !planConfig.variantId) {
     throw new Error(`No variant ID configured for plan ${opts.plan}`);
   }
 
-  const storeId = process.env.LEMONSQUEEZY_STORE_ID;
-  if (!storeId) throw new Error('LEMONSQUEEZY_STORE_ID not set');
-
-  const { data, error } = await createCheckout(storeId, planConfig.variantId, {
-    checkoutData: {
-      email: opts.email,
-      name: opts.name,
-      custom: {
-        user_id: opts.userId,
-        plan: opts.plan,
-      },
-    },
-    productOptions: {
-      redirectUrl: opts.successUrl,
-    },
+  const result = await createLemonSqueezyCheckout({
+    productId: planConfig.variantId,
+    userId: opts.userId,
+    userEmail: opts.email,
+    successUrl: opts.successUrl,
+    cancelUrl: opts.successUrl,
+    metadata: { plan: opts.plan, name: opts.name },
   });
 
-  if (error || !data) {
-    throw new Error(error?.message || 'Failed to create checkout');
-  }
-
-  return (data as { data: { attributes: { url: string } } }).data.attributes.url;
+  return result.checkoutUrl;
 }
 
 /** Get subscription details */

@@ -17,7 +17,8 @@
     "./crypto": "./src/crypto/index.ts",
     "./i18n": "./src/i18n/index.tsx",
     "./validate-url": "./src/validate-url/index.ts",
-    "./resilience": "./src/resilience/index.ts"
+    "./resilience": "./src/resilience/index.ts",
+    "./billing-provider": "./src/billing-provider.ts"
   },
   "scripts": {
     "build": "tsc",
