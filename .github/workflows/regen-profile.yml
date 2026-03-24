@@ -84,7 +84,8 @@ jobs:
             "key_id": "$ASC_KEY_ID",
             "issuer_id": "$ASC_ISSUER_ID",
             "key": "$KEY_B64",
-            "is_key_content_base64": true
+            "is_key_content_base64": true,
+            "in_house": false
           }
           KEYJSON
 
