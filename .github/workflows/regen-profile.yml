@@ -74,10 +74,22 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
         run: |
           PP_PATH="$RUNNER_TEMP/postpilot_appstore.mobileprovision"
+          KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+
+          # Build the api_key JSON file that fastlane expects
+          API_KEY_JSON_PATH="$RUNNER_TEMP/asc_api_key.json"
+          KEY_B64=$(base64 -i "$KEY_PATH" | tr -d '\n')
+          cat > "$API_KEY_JSON_PATH" << KEYJSON
+          {
+            "key_id": "$ASC_KEY_ID",
+            "issuer_id": "$ASC_ISSUER_ID",
+            "key": "$KEY_B64",
+            "is_key_content_base64": true
+          }
+          KEYJSON
 
           fastlane sigh \
-            --api_key_path ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
-            --api_key '{"key_id":"'"$ASC_KEY_ID"'","issuer_id":"'"$ASC_ISSUER_ID"'","key":"'"$(cat ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8 | base64 | tr -d '\n')"'","is_key_content_base64":true}' \
+            --api_key_path "$API_KEY_JSON_PATH" \
             --app_identifier "il.co.ftable.postpilot" \
             --platform "ios" \
             --provisioning_name "PostPilot AppStore Distribution" \
