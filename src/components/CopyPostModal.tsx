@@ -46,33 +46,33 @@ export default function CopyPostModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl p-6 w-full max-w-md space-y-5 animate-fade-in"
+        className="bg-[#111] border border-white/10 rounded-2xl p-6 w-full max-w-md space-y-5 animate-fade-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">
+          <h2 className="text-lg font-bold text-[#e5e5e5]">
             {isHe ? 'העתק ופרסם' : 'Copy & Post'}
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-white/5 text-[#9ca3af] hover:text-[#e5e5e5] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Caption preview */}
-        <div className="bg-gray-50 rounded-xl p-4 max-h-48 overflow-y-auto">
-          <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap" dir={isHe ? 'rtl' : 'ltr'}>
+        <div className="bg-[#0a0a0a] border border-white/5 rounded-xl p-4 max-h-48 overflow-y-auto">
+          <p className="text-sm text-[#e5e5e5]/80 leading-relaxed whitespace-pre-wrap" dir={isHe ? 'rtl' : 'ltr'}>
             {caption}
           </p>
           {hashtags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-3">
               {hashtags.map((tag, i) => (
-                <span key={i} className="text-xs text-violet-500">#{tag}</span>
+                <span key={i} className="text-xs text-blue-400/70">#{tag}</span>
               ))}
             </div>
           )}
@@ -81,10 +81,10 @@ export default function CopyPostModal({
         {/* Copy button */}
         <button
           onClick={handleCopy}
-          className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold transition-all ${
+          className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-lg font-semibold transition-all ${
             copied
-              ? 'bg-green-100 text-green-700'
-              : 'bg-violet-600 hover:bg-violet-700 text-white'
+              ? 'bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/20'
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
           }`}
         >
           {copied ? (
@@ -102,7 +102,7 @@ export default function CopyPostModal({
 
         {/* Platform links */}
         <div className="space-y-2">
-          <p className="text-xs text-gray-500 text-center">
+          <p className="text-xs text-[#9ca3af] text-center">
             {isHe ? 'פתחו את הפלטפורמה והדביקו:' : 'Open your platform and paste:'}
           </p>
           <div className="flex gap-2">
@@ -115,7 +115,7 @@ export default function CopyPostModal({
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-medium transition-colors ${link.color}`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-white font-medium transition-colors ${link.color}`}
                 >
                   <ExternalLink className="w-4 h-4" />
                   {isHe ? `פתח ${link.label}` : `Open ${link.label}`}
@@ -128,7 +128,7 @@ export default function CopyPostModal({
         {/* Done button */}
         <button
           onClick={onDone}
-          className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors"
+          className="w-full py-3 rounded-lg border border-white/10 text-[#9ca3af] font-medium hover:bg-white/5 transition-colors"
         >
           {isHe ? 'סיימתי' : 'Done'}
         </button>

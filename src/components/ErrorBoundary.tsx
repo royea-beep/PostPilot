@@ -22,16 +22,16 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
-            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-red-600 text-xl font-bold">!</span>
+        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
+          <div className="bg-[#111] border border-white/10 rounded-2xl p-8 max-w-md w-full text-center">
+            <div className="w-12 h-12 bg-[#ef4444]/10 border border-[#ef4444]/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <span className="text-[#ef4444] text-xl font-bold">!</span>
             </div>
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Something went wrong</h2>
-            <p className="text-sm text-gray-500 mb-4">{this.state.error}</p>
+            <h2 className="text-lg font-bold text-[#e5e5e5] mb-2">Something went wrong</h2>
+            <p className="text-sm text-[#9ca3af] mb-4">{this.state.error}</p>
             <button
               onClick={() => { this.setState({ hasError: false, error: null }); }}
-              className="bg-violet-600 hover:bg-violet-700 text-white font-medium px-6 py-2.5 rounded-xl transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2.5 rounded-lg transition-colors"
             >
               Try Again
             </button>

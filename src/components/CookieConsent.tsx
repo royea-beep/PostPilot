@@ -52,13 +52,13 @@ export function CookieConsent() {
       aria-label="Cookie consent"
       className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up"
     >
-      <div className="border-t border-gray-200 bg-white/95 backdrop-blur-md shadow-lg px-5 py-4">
+      <div className="border-t border-white/10 bg-[#111]/95 backdrop-blur-md shadow-lg px-5 py-4">
         <div className="mx-auto max-w-3xl flex flex-wrap items-center gap-4 justify-between">
           <div className="flex-1 min-w-[240px]">
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-sm font-semibold text-[#e5e5e5]">
               This site uses cookies
             </p>
-            <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+            <p className="text-xs text-[#9ca3af] mt-0.5 leading-relaxed">
               We use cookies to improve your experience and analyze site usage.
               By accepting, you consent to our use of cookies.
             </p>
@@ -66,13 +66,13 @@ export function CookieConsent() {
           <div className="flex gap-2 flex-shrink-0">
             <button
               onClick={handleAccept}
-              className="bg-violet-600 hover:bg-violet-700 text-white font-medium text-sm px-5 py-2 rounded-xl transition-colors cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-5 py-2 rounded-lg transition-colors cursor-pointer"
             >
               Accept
             </button>
             <button
               onClick={handleReject}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm px-5 py-2 rounded-xl border border-gray-200 transition-colors cursor-pointer"
+              className="bg-white/10 hover:bg-white/15 text-[#e5e5e5] font-medium text-sm px-5 py-2 rounded-lg border border-white/10 transition-colors cursor-pointer"
             >
               Reject
             </button>

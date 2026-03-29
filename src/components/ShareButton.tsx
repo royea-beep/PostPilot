@@ -17,7 +17,7 @@ const platforms = [
   {
     key: 'whatsapp',
     label: 'WhatsApp',
-    color: 'hover:border-green-500 hover:text-green-600 hover:shadow-green-500/20',
+    color: 'hover:border-green-500 hover:text-green-400 hover:shadow-green-500/20',
     href: () =>
       `https://api.whatsapp.com/send?text=${encodeURIComponent(SHARE_MESSAGE + '\n' + buildUrl('whatsapp'))}`,
     icon: (
@@ -30,7 +30,7 @@ const platforms = [
   {
     key: 'telegram',
     label: 'Telegram',
-    color: 'hover:border-sky-500 hover:text-sky-600 hover:shadow-sky-500/20',
+    color: 'hover:border-sky-500 hover:text-sky-400 hover:shadow-sky-500/20',
     href: () =>
       `https://t.me/share/url?url=${encodeURIComponent(buildUrl('telegram'))}&text=${encodeURIComponent(SHARE_MESSAGE)}`,
     icon: (
@@ -42,7 +42,7 @@ const platforms = [
   {
     key: 'twitter',
     label: 'Twitter / X',
-    color: 'hover:border-slate-700 hover:text-slate-800 hover:shadow-slate-500/20',
+    color: 'hover:border-slate-500 hover:text-slate-300 hover:shadow-slate-500/20',
     href: () =>
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(SHARE_MESSAGE)}&url=${encodeURIComponent(buildUrl('twitter'))}`,
     icon: (
@@ -76,7 +76,7 @@ export function ShareButton() {
     <div ref={ref} className="fixed bottom-6 right-6 z-50 flex flex-col-reverse items-end gap-3">
       {/* Expanded panel */}
       {open && (
-        <div className="flex flex-col gap-2 p-3 rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-xl shadow-2xl shadow-violet-500/10 animate-slide-up">
+        <div className="flex flex-col gap-2 p-3 rounded-2xl border border-white/10 bg-[#111]/95 backdrop-blur-xl shadow-2xl shadow-blue-500/5 animate-slide-up">
           {platforms.map((p) => (
             <a
               key={p.key}
@@ -84,7 +84,7 @@ export function ShareButton() {
               target="_blank"
               rel="noopener noreferrer"
               title={p.label}
-              className={`w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400 transition-all duration-200 ${p.color} hover:scale-110 hover:shadow-lg`}
+              className={`w-10 h-10 flex items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[#9ca3af] transition-all duration-200 ${p.color} hover:scale-110 hover:shadow-lg`}
             >
               {p.icon}
             </a>
@@ -94,7 +94,7 @@ export function ShareButton() {
           <button
             onClick={copyLink}
             title="Copy link"
-            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400 transition-all duration-200 hover:border-violet-400 hover:text-violet-600 hover:shadow-violet-400/20 hover:scale-110 hover:shadow-lg"
+            className="w-10 h-10 flex items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[#9ca3af] transition-all duration-200 hover:border-blue-500/40 hover:text-blue-400 hover:shadow-blue-400/20 hover:scale-110 hover:shadow-lg"
           >
             {copied ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -112,7 +112,7 @@ export function ShareButton() {
 
       {/* Toast */}
       {copied && (
-        <span className="absolute -top-10 right-0 px-3 py-1.5 text-xs font-medium rounded-lg bg-violet-100 text-violet-700 border border-violet-200 whitespace-nowrap animate-slide-up">
+        <span className="absolute -top-10 right-0 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 whitespace-nowrap animate-slide-up">
           Link copied!
         </span>
       )}
@@ -123,8 +123,8 @@ export function ShareButton() {
         aria-label="Share"
         className={`w-12 h-12 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 ${
           open
-            ? 'bg-violet-100 border border-violet-300 text-violet-600 rotate-45'
-            : 'bg-gradient-to-br from-violet-600 to-purple-600 text-white hover:scale-110 hover:shadow-violet-500/40'
+            ? 'bg-blue-500/10 border border-blue-500/30 text-blue-400 rotate-45'
+            : 'bg-gradient-to-br from-blue-600 to-blue-700 text-white hover:scale-110 hover:shadow-blue-500/40'
         }`}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
