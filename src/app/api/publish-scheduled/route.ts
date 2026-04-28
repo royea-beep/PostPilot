@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
     const retriedCount = results.filter((r) => !r.success && r.retried).length;
     const failedCount = results.filter((r) => !r.success && !r.retried).length;
 
-    // Audit log — in its own try/catch so a missing table never blocks cron response
+    // Audit log - in its own try/catch so a missing table never blocks cron response
     try {
       await prisma.auditLog.create({
         data: {
