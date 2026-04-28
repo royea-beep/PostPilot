@@ -136,7 +136,7 @@ export async function GET(req: NextRequest) {
       results,
     });
   } catch (err) {
-    if (process.env.NODE_ENV !== 'production') console.error('Scheduled publish cron error:', err);
+    console.error('[publish-scheduled] cron error:', err instanceof Error ? `${err.message}\n${err.stack}` : String(err));
     return NextResponse.json({ error: 'Cron job failed' }, { status: 500 });
   }
 }
