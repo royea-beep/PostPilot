@@ -114,19 +114,23 @@ export async function GET(req: NextRequest) {
     const retriedCount = results.filter((r) => !r.success && r.retried).length;
     const failedCount = results.filter((r) => !r.success && !r.retried).length;
 
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        action: 'CRON_PUBLISH_SCHEDULED',
-        metadata: JSON.stringify({
-          processed: results.length,
-          success: successCount,
-          retried: retriedCount,
-          failed: failedCount,
-          results,
-        }),
-      },
-    });
+    // Audit log — in its own try/catch so a missing table never blocks cron response
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action: 'CRON_PUBLISH_SCHEDULED',
+          metadata: JSON.stringify({
+            processed: results.length,
+            success: successCount,
+            retried: retriedCount,
+            failed: failedCount,
+            results,
+          }),
+        },
+      });
+    } catch (auditErr) {
+      console.error('[publish-scheduled] auditLog.create failed:', auditErr);
+    }
 
     return NextResponse.json({
       processed: results.length,
@@ -136,7 +140,7 @@ export async function GET(req: NextRequest) {
       results,
     });
   } catch (err) {
-    if (process.env.NODE_ENV !== 'production') console.error('Scheduled publish cron error:', err);
+    console.error('[publish-scheduled] cron error:', err);
     return NextResponse.json({ error: 'Cron job failed' }, { status: 500 });
   }
 }
