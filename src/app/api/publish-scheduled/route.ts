@@ -22,11 +22,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    console.log('[publish-scheduled] cp1: handler start');
     const now = new Date();
 
     // Find all posts that are due for publishing
-    console.log('[publish-scheduled] cp2: querying scheduled posts');
     const scheduledPosts = await prisma.post.findMany({
       where: {
         status: 'SCHEDULED',
@@ -38,7 +36,6 @@ export async function GET(req: NextRequest) {
       take: 20, // Process max 20 at a time to avoid timeout
       orderBy: { scheduledFor: 'asc' },
     });
-    console.log('[publish-scheduled] cp3: found', scheduledPosts.length, 'posts');
 
     if (scheduledPosts.length === 0) {
       return NextResponse.json({ processed: 0, message: 'No scheduled posts due' });
@@ -117,23 +114,19 @@ export async function GET(req: NextRequest) {
     const retriedCount = results.filter((r) => !r.success && r.retried).length;
     const failedCount = results.filter((r) => !r.success && !r.retried).length;
 
-    // Audit log - in its own try/catch so a missing table never blocks cron response
-    try {
-      await prisma.auditLog.create({
-        data: {
-          action: 'CRON_PUBLISH_SCHEDULED',
-          metadata: JSON.stringify({
-            processed: results.length,
-            success: successCount,
-            retried: retriedCount,
-            failed: failedCount,
-            results,
-          }),
-        },
-      });
-    } catch (auditErr) {
-      console.error('[publish-scheduled] auditLog.create failed:', auditErr);
-    }
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        action: 'CRON_PUBLISH_SCHEDULED',
+        metadata: JSON.stringify({
+          processed: results.length,
+          success: successCount,
+          retried: retriedCount,
+          failed: failedCount,
+          results,
+        }),
+      },
+    });
 
     return NextResponse.json({
       processed: results.length,
@@ -143,7 +136,7 @@ export async function GET(req: NextRequest) {
       results,
     });
   } catch (err) {
-    console.error('[publish-scheduled] cron error:', err);
+    console.error('[publish-scheduled] cron error:', err instanceof Error ? `${err.message}\n${err.stack}` : String(err));
     return NextResponse.json({ error: 'Cron job failed' }, { status: 500 });
   }
 }
