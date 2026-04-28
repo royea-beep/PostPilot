@@ -22,9 +22,11 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    console.log('[publish-scheduled] cp1: handler start');
     const now = new Date();
 
     // Find all posts that are due for publishing
+    console.log('[publish-scheduled] cp2: querying scheduled posts');
     const scheduledPosts = await prisma.post.findMany({
       where: {
         status: 'SCHEDULED',
@@ -36,6 +38,7 @@ export async function GET(req: NextRequest) {
       take: 20, // Process max 20 at a time to avoid timeout
       orderBy: { scheduledFor: 'asc' },
     });
+    console.log('[publish-scheduled] cp3: found', scheduledPosts.length, 'posts');
 
     if (scheduledPosts.length === 0) {
       return NextResponse.json({ processed: 0, message: 'No scheduled posts due' });
