@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
             format,
             platforms: JSON.stringify(platforms),
             optionIndex: i + 1,
+            source: opt.source,
           },
         })
       )
@@ -66,6 +67,21 @@ export async function POST(req: NextRequest) {
         source: result.aiUsage ? 'ai' : 'template',
       },
     }).catch(() => {}); // Non-blocking
+
+    // Fire analytics event when AI fell back to templates (silent-failure detection)
+    const usedFallback = result.options.some((o) => o.source === 'template_fallback');
+    if (usedFallback) {
+      prisma.analyticsEvent.create({
+        data: {
+          type: 'ai_fallback_served',
+          payload: JSON.stringify({
+            brandId: brand.id,
+            reason: process.env.ANTHROPIC_API_KEY ? 'ai_call_failed_or_malformed' : 'no_api_key',
+          }),
+          timestamp: new Date(),
+        },
+      }).catch(() => {}); // non-blocking telemetry
+    }
 
     // Learning hook: postGenerated
     for (const p of platforms) {
@@ -83,6 +99,7 @@ export async function POST(req: NextRequest) {
         style: result.options[i].style,
         format: d.format,
         optionIndex: d.optionIndex,
+        source: d.source,
       })),
       aiUsage: result.aiUsage,
     });

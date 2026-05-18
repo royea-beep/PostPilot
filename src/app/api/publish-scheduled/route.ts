@@ -39,6 +39,11 @@ export async function GET(req: NextRequest) {
     });
 
     if (scheduledPosts.length === 0) {
+      logInfo('publish-scheduled tick complete (no work)', {
+        route: '/api/publish-scheduled',
+        processed: 0,
+        failed: 0,
+      });
       return NextResponse.json({ processed: 0, message: 'No scheduled posts due' });
     }
 

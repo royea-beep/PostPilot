@@ -18,6 +18,7 @@ interface Draft {
   style: string;
   format: string;
   optionIndex: number;
+  source?: string;
 }
 
 interface PublishJobResult {
@@ -594,7 +595,17 @@ export default function BrandPage({ params }: { params: Promise<{ token: string 
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${style.color}`}>{style.label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${style.color}`}>{style.label}</span>
+                      {draft.source === 'template_fallback' && (
+                        <span
+                          className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400/80 border border-amber-500/20"
+                          title={isHe ? 'תבנית — שירות ה-AI אינו זמין' : 'Template caption — AI service was unavailable'}
+                        >
+                          {isHe ? 'תבנית' : 'Template'}
+                        </span>
+                      )}
+                    </div>
                     {selected && <Check className="w-5 h-5 text-blue-400" />}
                   </div>
                   <p className="text-sm text-[#e5e5e5]/80 leading-relaxed mb-2" dir={isHe ? 'rtl' : 'ltr'}>{draft.caption}</p>

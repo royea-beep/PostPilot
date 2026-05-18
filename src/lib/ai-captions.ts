@@ -31,6 +31,7 @@ interface CaptionOption {
   caption: string;
   hashtags: string[];
   style: string; // "on-brand", "trendy", "minimal"
+  source: 'ai' | 'template_fallback';
 }
 
 export interface CaptionResult {
@@ -156,7 +157,8 @@ Respond ONLY with valid JSON array:
     const parsed = JSON.parse(jsonMatch[0]) as CaptionOption[];
     if (!Array.isArray(parsed) || parsed.length < 3) return { options: generateFallbackCaptions(options) };
 
-    return { options: parsed.slice(0, 3), aiUsage };
+    const tagged = parsed.slice(0, 3).map((o) => ({ ...o, source: 'ai' as const }));
+    return { options: tagged, aiUsage };
   } catch (err) {
     console.error('AI caption generation failed:', err);
     return { options: generateFallbackCaptions(options) };
@@ -173,16 +175,19 @@ function generateFallbackCaptions(options: GenerateOptions): CaptionOption[] {
         caption: `תוכן חדש מ-${name}! עקבו אחרינו לעוד עדכונים`,
         hashtags: ['תוכן', 'חדש', 'עסקים', name.replace(/\s/g, '')],
         style: 'on-brand',
+        source: 'template_fallback',
       },
       {
         caption: `שמרו את הפוסט הזה! ${name} מביאים לכם משהו מיוחד`,
         hashtags: ['טרנדי', 'חייביםלראות', 'ישראל', name.replace(/\s/g, '')],
         style: 'trendy',
+        source: 'template_fallback',
       },
       {
         caption: name,
         hashtags: [name.replace(/\s/g, '')],
         style: 'minimal',
+        source: 'template_fallback',
       },
     ];
   }
@@ -192,16 +197,19 @@ function generateFallbackCaptions(options: GenerateOptions): CaptionOption[] {
       caption: `New from ${name}! Follow us for more updates and behind-the-scenes content.`,
       hashtags: ['new', 'content', 'brand', name.replace(/\s/g, '').toLowerCase()],
       style: 'on-brand',
+      source: 'template_fallback',
     },
     {
       caption: `Save this post! ${name} is bringing you something special. Stay tuned.`,
       hashtags: ['trending', 'mustfollow', 'viral', name.replace(/\s/g, '').toLowerCase()],
       style: 'trendy',
+      source: 'template_fallback',
     },
     {
       caption: name,
       hashtags: [name.replace(/\s/g, '').toLowerCase()],
       style: 'minimal',
+      source: 'template_fallback',
     },
   ];
 }

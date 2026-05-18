@@ -185,6 +185,7 @@ model PostDraft {
   format      String   // story, post, reel
   platforms   String   // JSON array of target platforms
   optionIndex Int      // 1, 2, or 3
+  source      String   @default("ai") // "ai" | "template_fallback"
 
   // Selection
   selected       Boolean   @default(false)
