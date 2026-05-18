@@ -4,7 +4,7 @@ import { withAuth } from '@royea/shared-utils/auth-guard';
 import { createBrandSchema } from '@/lib/validation';
 import { getPlanLimits } from '@/lib/payments';
 import { emitServerEvent } from '@/lib/learning';
-import { logError } from '@/lib/error-logger';
+import { logError } from '@/lib/error-logger.server';
 
 type RouteContext = { params: Promise<Record<string, never>> };
 

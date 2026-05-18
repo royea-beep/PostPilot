@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { logError } from '@/lib/error-logger';
+import { logError } from '@/lib/error-logger.server';
 
 // GET /api/media/:id — serve media file from DB
 export async function GET(req: NextRequest) {

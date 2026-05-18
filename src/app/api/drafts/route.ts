@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { generateCaptions } from '@/lib/ai-captions';
 import { emitServerEvent } from '@/lib/learning';
-import { logError } from '@/lib/error-logger';
+import { logError } from '@/lib/error-logger.server';
 
 // POST /api/drafts — generate 3 AI caption options (public, uses brand token)
 export async function POST(req: NextRequest) {

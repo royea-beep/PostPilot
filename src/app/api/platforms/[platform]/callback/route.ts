@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db';
 import { encrypt } from '@/lib/crypto';
 import { exchangeCodeForToken, type PlatformKey } from '@/lib/platforms';
 import { emitServerEvent } from '@/lib/learning';
-import { logError } from '@/lib/error-logger';
+import { logError } from '@/lib/error-logger.server';
 
 const VALID_PLATFORMS = new Set<string>(['instagram', 'facebook', 'tiktok']);
 

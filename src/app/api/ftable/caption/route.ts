@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateCaptions } from '@/lib/ai-captions';
 import { ftableCaptionLimiter, applyRateLimit } from '@/lib/rate-limit';
-import { logError } from '@/lib/error-logger';
+import { logError } from '@/lib/error-logger.server';
 
 /**
  * POST /api/ftable/caption

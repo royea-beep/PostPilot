@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createCheckoutUrl } from '@/lib/payments';
 import { prisma } from '@/lib/db';
 import { withAuth } from '@royea/shared-utils/auth-guard';
-import { logError } from '@/lib/error-logger';
+import { logError } from '@/lib/error-logger.server';
 
 type RouteContext = { params: Promise<Record<string, never>> };
 

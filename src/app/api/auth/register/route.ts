@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { hashPassword, signAccessToken, signRefreshToken } from '@royea/shared-utils/auth';
 import { registerSchema } from '@/lib/validation';
-import { logError } from '@/lib/error-logger';
+import { logError } from '@/lib/error-logger.server';
 
 // ---------------------------------------------------------------------------
 // In-memory rate limiter — 3 attempts per 15 minutes per IP

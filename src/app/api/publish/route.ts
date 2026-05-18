@@ -4,7 +4,7 @@ import { analyzeAndUpdateStyleProfile } from '@/lib/style-engine';
 import { getPlanLimits } from '@/lib/payments';
 import { processPublishJob, type PublishJobResult } from '@/services/publish-job.service';
 import { emitServerEvent } from '@/lib/learning';
-import { logError } from '@/lib/error-logger';
+import { logError } from '@/lib/error-logger.server';
 
 /**
  * POST /api/publish — publish a selected draft to connected platforms.

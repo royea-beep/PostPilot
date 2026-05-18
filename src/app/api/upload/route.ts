@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { logError } from '@/lib/error-logger';
+import { logError } from '@/lib/error-logger.server';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB for DB storage
 const ALLOWED_TYPES = new Set([
