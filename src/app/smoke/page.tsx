@@ -54,9 +54,9 @@ async function runChecks(): Promise<CheckResult[]> {
         : { name: 'bug_reporter_env', status: 'FAIL', detail: '(unset)' }
     })(),
 
-    // 5. /api/_smoke JSON endpoint
+    // 5. /api/smoke JSON endpoint
     (async (): Promise<CheckResult> => {
-      const res = await fetch('/api/_smoke')
+      const res = await fetch('/api/smoke')
       if (!res.ok) return { name: 'smoke_endpoint', status: 'FAIL', detail: `(${res.status})` }
       const body = await res.json().catch(() => null)
       return body?.ok
