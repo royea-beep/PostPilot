@@ -17,3 +17,8 @@ CLAUDE.md
 .claude/settings.local.json
 
 .env*.local
+
+# Playwright artifacts
+/playwright-report/
+/test-results/
+/playwright/.cache/

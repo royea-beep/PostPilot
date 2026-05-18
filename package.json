@@ -7,7 +7,10 @@
     "dev": "cross-env NODE_OPTIONS=--max-old-space-size=512 next dev -p 3003",
     "build": "next build --webpack",
     "start": "next start",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
   },
   "keywords": [],
   "author": "",
@@ -43,6 +46,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "cross-env": "^7.0.3"
   }
 }
