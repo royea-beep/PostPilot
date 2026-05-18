@@ -1,5 +1,57 @@
 # Changelog
 
+## [1.0.7] - 2026-05-18
+
+Observability hardening + first E2E coverage. Two production-bug
+discoveries by the new infrastructure on the same day.
+
+### Fixed
+- Heartbeat reliability: `logInfo` / `logError` calls in
+  `src/app/api/**` were fire-and-forget without `await`, so the
+  Vercel lambda terminated before the fetch to empire-hq committed.
+  Only ~1 in 6 heartbeats actually landed. Now wrapped in Next.js
+  16's `after()` API so the lambda stays alive until telemetry
+  posts. Discovered by `cron-watchdog` 2 hours after it shipped
+  — exactly the failure mode the watchdog was built for.
+- CSP silently blocking ProjectLearner v1.0.0 scripts since commit
+  `f619a9cc` (~8 weeks). PostPilot was loading 5 cross-domain
+  scripts (`pl-tracker`, `pl-engine`, `pl-insights`,
+  `pl-persistence`, `pl-learner`) from `ftable.co.il`, but the
+  CSP only permitted `script-src 'self'`. ProjectLearner was dead
+  on PostPilot from day one. Caught by the new Playwright suite's
+  console-error assertion. CSP now allows `https://ftable.co.il`
+  in `script-src`. Going-forward only; ~8 weeks of behavioral
+  events are not recoverable.
+
+### Added
+- `src/lib/error-logger.server.ts`: new server-only logger split
+  from the client-side `error-logger.ts`. Uses `import 'server-only'`
+  directive + Next.js `after()` for guaranteed delivery.
+- Playwright E2E suite: 5 spec files in `tests/e2e/` covering
+  landing, register/login, brand-portal badge, console-errors,
+  cron-heartbeat. Chromium-only for CI speed.
+- `/_smoke` test harness page + `/api/_smoke` JSON probe — for
+  empire-wide `browser-test` Edge Function integration. Runs 5
+  self-tests on page mount, outputs Heroes Hadera format.
+- `cron-watchdog` Edge Function on empire-hq (deployed in
+  v1.0.6 closing notes, formalized here): scans `error_logs`
+  every 10 min for stale heartbeats, alerts Telegram on 15-min
+  idle, idempotent, 6h re-up on persistent outage.
+
+### Changed
+- 14 API route files: imports moved from `@/lib/error-logger` to
+  `@/lib/error-logger.server`.
+- `next.config.ts`: CSP `script-src` extended with
+  `https://ftable.co.il`.
+
+### Known incidents this release surfaced
+- `postpilot-cron-7day-outage-2026-05-18`
+  (incident_slug in empire_incident_log) — the 7-day silence that
+  started this whole sprint.
+- `csp-silently-blocks-cross-origin-scripts-no-detection`
+  (mistake_slug in empire_mistakes_index) — 8-week silent failure
+  pattern saved as cross-project prevention rule.
+
 ## [1.0.6] - 2026-05-18
 
 Recovery release. Incident response for a 7+ day production cron outage,
