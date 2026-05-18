@@ -1,0 +1,26 @@
+{
+  "name": "PostPilot",
+  "slug": "postpilot",
+  "status": "active",
+  "tier": "web-app",
+  "created": "2024-01-01",
+  "last_verified": "2026-05-18",
+  "db": {
+    "provider": "supabase",
+    "id": "dfgqcednswxtrzvuiizq",
+    "region": "eu-central-1",
+    "shared_with": []
+  },
+  "mobile": null,
+  "web": {
+    "vercel_project": "postpilot-app",
+    "production_url": "https://postpilot.ftable.co.il",
+    "framework": "nextjs-16"
+  },
+  "repo": "royea-beep/PostPilot",
+  "telegram_bot": null,
+  "critical_dates": [],
+  "dependencies": [],
+  "health_rpc": null,
+  "hands_off": false
+}

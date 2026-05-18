@@ -56,7 +56,7 @@
 | **ftable** | `C:\Projects\ftable` | Vanilla JS + Supabase + Tailwind | Live — FEATURED6 Top 6 grid fixed (v_leaderboard_top6 view) | https://ftable.co.il |
 | **analyzer-standalone** | `C:\Projects\analyzer-standalone` | Next.js 16 + Claude Vision + LemonSqueezy + SecretSauce | Live v1.7.0 — Billing live: FREE 3/mo, Pro ₪79/50, Enterprise contact, Bulk CTA | https://analyzer.ftable.co.il |
 | **Caps Poker** | `C:\Projects\Caps` | React Native + Expo | Live v1.3.3 — Bug reporter (shake+FAB), Central Perk theme, iPhone Safari fixed | https://caps.ftable.co.il + TestFlight Build 16 |
-| **PostPilot** | `C:\Projects\PostPilot` | Next.js 16 + Prisma + Neon + LemonSqueezy | Live v1.0.5 — Meta App wired (495336020567948), promo codes live, 4 bugs fixed, bug reporter live | https://postpilot.ftable.co.il |
+| **PostPilot** | `C:\Projects\CONTENT-AI\PostPilot` | Next.js 16 + Prisma 7 + Supabase Postgres 17 + LemonSqueezy | Live v1.0.5 — Meta App wired (495336020567948), promo codes live, 4 bugs fixed, bug reporter live. DB migrated Neon → Supabase 2026-04-28; cron 7-day outage resolved 2026-05-18 (see docs/HANDOFF_2026-05-18_cron-incident-resolved.md). | https://postpilot.ftable.co.il |
 
 ### Tier 2 — Ready to Launch
 | Project | Path | Stack | Status |
