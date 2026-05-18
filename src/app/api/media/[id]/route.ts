@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/error-logger';
 
 // GET /api/media/:id — serve media file from DB
 export async function GET(req: NextRequest) {
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
-    if (process.env.NODE_ENV !== 'production') console.error('Media serve error:', err);
+    logError('Media serve error', err, { route: '/api/media/[id]' });
     return NextResponse.json({ error: 'Failed to serve media' }, { status: 500 });
   }
 }

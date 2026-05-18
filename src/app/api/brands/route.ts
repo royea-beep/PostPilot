@@ -4,6 +4,7 @@ import { withAuth } from '@royea/shared-utils/auth-guard';
 import { createBrandSchema } from '@/lib/validation';
 import { getPlanLimits } from '@/lib/payments';
 import { emitServerEvent } from '@/lib/learning';
+import { logError } from '@/lib/error-logger';
 
 type RouteContext = { params: Promise<Record<string, never>> };
 
@@ -69,7 +70,7 @@ export const POST = withAuth((async (req: NextRequest, userId: string) => {
     if (err instanceof Error && err.name === 'ZodError') {
       return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
     }
-    if (process.env.NODE_ENV !== 'production') console.error('Create brand error:', err);
+    logError('Create brand error', err, { route: '/api/brands' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }) as unknown as import('@royea/shared-utils/auth-guard').AuthRouteHandler) as unknown as (req: NextRequest, _context: RouteContext) => Promise<NextResponse>;

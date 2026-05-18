@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/error-logger';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB for DB storage
 const ALLOWED_TYPES = new Set([
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
       sizeBytes: upload.sizeBytes,
     }, { status: 201 });
   } catch (err) {
-    if (process.env.NODE_ENV !== 'production') console.error('Upload error:', err);
+    logError('Upload error', err, { route: '/api/upload' });
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { generateCaptions } from '@/lib/ai-captions';
 import { emitServerEvent } from '@/lib/learning';
+import { logError } from '@/lib/error-logger';
 
 // POST /api/drafts — generate 3 AI caption options (public, uses brand token)
 export async function POST(req: NextRequest) {
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
       aiUsage: result.aiUsage,
     });
   } catch (err) {
-    if (process.env.NODE_ENV !== 'production') console.error('Drafts error:', err);
+    logError('Drafts error', err, { route: '/api/drafts' });
     return NextResponse.json({ error: 'Failed to generate captions' }, { status: 500 });
   }
 }

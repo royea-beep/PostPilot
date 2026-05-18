@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyPassword, signAccessToken, signRefreshToken } from '@royea/shared-utils/auth';
 import { loginSchema } from '@/lib/validation';
+import { logError } from '@/lib/error-logger';
 
 // ---------------------------------------------------------------------------
 // In-memory rate limiter — 5 attempts per 15 minutes per IP
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof Error && err.name === 'ZodError') {
       return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
     }
-    if (process.env.NODE_ENV !== 'production') console.error('Login error:', err);
+    logError('Login error', err, { route: '/api/auth/login' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

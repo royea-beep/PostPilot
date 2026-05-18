@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/error-logger';
 
 type IncomingEvent = { type: string; payload?: object; timestamp?: number };
 
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    if (process.env.NODE_ENV !== 'production') console.error('[api/events]', err);
+    logError('Events ingest error', err, { route: '/api/events' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

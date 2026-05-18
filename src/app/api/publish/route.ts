@@ -4,6 +4,7 @@ import { analyzeAndUpdateStyleProfile } from '@/lib/style-engine';
 import { getPlanLimits } from '@/lib/payments';
 import { processPublishJob, type PublishJobResult } from '@/services/publish-job.service';
 import { emitServerEvent } from '@/lib/learning';
+import { logError } from '@/lib/error-logger';
 
 /**
  * POST /api/publish — publish a selected draft to connected platforms.
@@ -279,7 +280,7 @@ export async function POST(req: NextRequest) {
     // Update Style DNA in background
     if (successCount > 0) {
       analyzeAndUpdateStyleProfile(brand.id).catch((err) => {
-        if (process.env.NODE_ENV !== 'production') console.error('Style analysis failed:', err);
+        logError('Style analysis failed (post-publish)', err, { route: '/api/publish' });
       });
     }
 
@@ -321,7 +322,7 @@ export async function POST(req: NextRequest) {
       ...(skippedPlatforms.length > 0 ? { skippedPlatforms } : {}),
     });
   } catch (err) {
-    if (process.env.NODE_ENV !== 'production') console.error('Publish error:', err);
+    logError('Publish error', err, { route: '/api/publish' });
     return NextResponse.json({ error: 'Publish failed' }, { status: 500 });
   }
 }

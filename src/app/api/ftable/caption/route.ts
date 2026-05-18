@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateCaptions } from '@/lib/ai-captions';
 import { ftableCaptionLimiter, applyRateLimit } from '@/lib/rate-limit';
+import { logError } from '@/lib/error-logger';
 
 /**
  * POST /api/ftable/caption
@@ -137,7 +138,7 @@ export async function POST(req: NextRequest) {
       hashtags: option.hashtags,
     });
   } catch (err) {
-    if (process.env.NODE_ENV !== 'production') console.error('ftable caption error:', err);
+    logError('ftable caption error', err, { route: '/api/ftable/caption' });
     return NextResponse.json({ error: 'Failed to generate caption' }, { status: 500 });
   }
 }

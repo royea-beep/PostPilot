@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { withAuth } from '@royea/shared-utils/auth-guard';
 import { analyzeAndUpdateStyleProfile } from '@/lib/style-engine';
+import { logError } from '@/lib/error-logger';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -41,7 +42,7 @@ export const POST = withAuth((async (req: NextRequest, userId: string) => {
 
     return NextResponse.json(styleProfile);
   } catch (err) {
-    if (process.env.NODE_ENV !== 'production') console.error('Style analysis error:', err);
+    logError('Style analysis error', err, { route: '/api/brands/[id]/analyze' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }) as unknown as import('@royea/shared-utils/auth-guard').AuthRouteHandler) as unknown as (req: NextRequest, context: RouteContext) => Promise<NextResponse>;

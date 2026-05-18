@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import crypto from 'crypto';
 import { emitServerEvent } from '@/lib/learning';
+import { logError } from '@/lib/error-logger';
 
 /**
  * LemonSqueezy webhook handler for PostPilot.
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
   const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
 
   if (!secret) {
-    if (process.env.NODE_ENV !== 'production') console.error('Webhook secret not configured');
+    logError('Webhook secret not configured', null, { route: '/api/billing/webhook' });
     return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
   }
 
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
   } catch {
     const eventId = payload?.data?.id;
     const eventType = eventName ?? 'unknown';
-    if (process.env.NODE_ENV !== 'production') console.error(`Webhook handler failed: event=${eventType} id=${eventId ?? 'n/a'}`);
+    logError('Webhook handler failed', null, { route: '/api/billing/webhook', event_type: eventType, event_id: eventId ?? 'n/a' });
     return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 });
   }
 

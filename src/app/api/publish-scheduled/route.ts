@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { processPublishJob } from '@/services/publish-job.service';
 import { emitServerEvent } from '@/lib/learning';
+import { logInfo } from '@/lib/error-logger';
 
 /**
  * GET /api/publish-scheduled — Cron job to publish scheduled posts.
@@ -126,6 +127,12 @@ export async function GET(req: NextRequest) {
           results,
         }),
       },
+    });
+
+    logInfo('publish-scheduled tick complete', {
+      route: '/api/publish-scheduled',
+      processed: results.length,
+      failed: failedCount,
     });
 
     return NextResponse.json({

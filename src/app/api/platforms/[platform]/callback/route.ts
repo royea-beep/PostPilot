@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { encrypt } from '@/lib/crypto';
 import { exchangeCodeForToken, type PlatformKey } from '@/lib/platforms';
 import { emitServerEvent } from '@/lib/learning';
+import { logError } from '@/lib/error-logger';
 
 const VALID_PLATFORMS = new Set<string>(['instagram', 'facebook', 'tiktok']);
 
@@ -149,7 +150,7 @@ export async function GET(
       `${appUrl}/platforms?connected=${platform}&brandId=${state.brandId}`,
     );
   } catch (err) {
-    if (process.env.NODE_ENV !== 'production') console.error(`OAuth callback error for ${platform}:`, err);
+    logError('OAuth callback error', err, { route: '/api/platforms/[platform]/callback', platform });
     return redirectWithError(
       err instanceof Error ? err.message : 'Token exchange failed',
     );
