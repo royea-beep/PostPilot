@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@royea/shared-utils/auth-context';
 import { Rocket, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/lib/language-context';
 
 export default function RegisterPage() {
   const router = useRouter();
   const { login } = useAuth();
+  const { isHe } = useLanguage();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -53,27 +55,27 @@ export default function RegisterPage() {
           <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
             <Rocket className="w-6 h-6 text-blue-400" />
           </div>
-          <h1 className="text-2xl font-bold text-[#e5e5e5]">Create account</h1>
-          <p className="text-sm text-[#9ca3af] mt-1">Start managing social media for your clients</p>
+          <h1 className="text-2xl font-bold text-[#e5e5e5]">{isHe ? "צור חשבון" : "Create account"}</h1>
+          <p className="text-sm text-[#9ca3af] mt-1">{isHe ? "התחילו לנהל מדיה חברתית עבור הלקוחות שלכם" : "Start managing social media for your clients"}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="w-full px-4 py-3 bg-[#111] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" required />
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full px-4 py-3 bg-[#111] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" required />
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password (8+ characters)" className="w-full px-4 py-3 bg-[#111] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" required minLength={8} />
-          <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Agency / Business name (optional)" className="w-full px-4 py-3 bg-[#111] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" />
-          <input type="text" value={promoCode} onChange={(e) => setPromoCode(e.target.value)} placeholder="Promo code (optional)" className="w-full px-4 py-3 bg-[#111] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" autoComplete="off" />
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={isHe ? "השם שלך" : "Your name"} className="w-full px-4 py-3 bg-[#111] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" required />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={isHe ? "אימייל" : "Email"} className="w-full px-4 py-3 bg-[#111] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" required />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={isHe ? "סיסמה (8+ תווים)" : "Password (8+ characters)"} className="w-full px-4 py-3 bg-[#111] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" required minLength={8} />
+          <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder={isHe ? "שם סוכנות / עסק (אופציונלי)" : "Agency / Business name (optional)"} className="w-full px-4 py-3 bg-[#111] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" />
+          <input type="text" value={promoCode} onChange={(e) => setPromoCode(e.target.value)} placeholder={isHe ? "קוד מבצע (אופציונלי)" : "Promo code (optional)"} className="w-full px-4 py-3 bg-[#111] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" autoComplete="off" />
 
           {error && <p className="text-sm text-[#ef4444] text-center">{error}</p>}
 
           <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2">
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-            {loading ? 'Creating...' : 'Create Account'}
+            {loading ? (isHe ? "יוצר..." : "Creating...") : (isHe ? "צור חשבון" : "Create Account")}
           </button>
         </form>
 
         <p className="text-sm text-[#9ca3af] text-center mt-6">
-          Already have an account? <a href="/login" className="text-blue-400 font-medium hover:text-blue-300">Sign in</a>
+          {isHe ? "כבר יש לך חשבון? " : "Already have an account? "}<a href="/login" className="text-blue-400 font-medium hover:text-blue-300">{isHe ? "התחבר" : "Sign in"}</a>
         </p>
       </div>
     </div>

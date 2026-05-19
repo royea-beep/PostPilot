@@ -4,12 +4,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@royea/shared-utils/auth-context';
 import { Rocket, Loader2, KeyRound } from 'lucide-react';
+import { useLanguage } from '@/lib/language-context';
 
 const ACCESS_CODES = (process.env.NEXT_PUBLIC_ACCESS_CODES || '').split(',').filter(Boolean);
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, register } = useAuth();
+  const { isHe } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -35,8 +37,8 @@ export default function LoginPage() {
 
   const handleAccessCode = async () => {
     const code = accessCode.trim().toUpperCase();
-    if (!code) { setCodeError('הזן קוד גישה'); return; }
-    if (!ACCESS_CODES.includes(code)) { setCodeError('קוד לא תקין'); return; }
+    if (!code) { setCodeError(isHe ? "הזן קוד גישה" : "Enter an access code"); return; }
+    if (!ACCESS_CODES.includes(code)) { setCodeError(isHe ? "קוד לא תקין" : "Invalid code"); return; }
 
     setCodeError('');
     setCodeLoading(true);
@@ -50,7 +52,7 @@ export default function LoginPage() {
       }
       router.push('/dashboard');
     } catch (err) {
-      setCodeError(err instanceof Error ? err.message : 'כניסה נכשלה');
+      setCodeError(err instanceof Error ? err.message : (isHe ? "כניסה נכשלה" : "Sign in failed"));
     } finally {
       setCodeLoading(false);
     }
@@ -63,8 +65,8 @@ export default function LoginPage() {
           <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
             <Rocket className="w-6 h-6 text-blue-400" />
           </div>
-          <h1 className="text-2xl font-bold text-[#e5e5e5]">Welcome back</h1>
-          <p className="text-sm text-[#9ca3af] mt-1">Sign in to PostPilot</p>
+          <h1 className="text-2xl font-bold text-[#e5e5e5]">{isHe ? "ברוך שובך" : "Welcome back"}</h1>
+          <p className="text-sm text-[#9ca3af] mt-1">{isHe ? "התחבר ל-PostPilot" : "Sign in to PostPilot"}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -72,7 +74,7 @@ export default function LoginPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
+            placeholder={isHe ? "אימייל" : "Email"}
             className="w-full px-4 py-3 bg-[#111] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             required
           />
@@ -80,7 +82,7 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
+            placeholder={isHe ? "סיסמה" : "Password"}
             className="w-full px-4 py-3 bg-[#111] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             required
           />
@@ -93,7 +95,7 @@ export default function LoginPage() {
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? (isHe ? "מתחבר..." : "Signing in...") : (isHe ? "התחבר" : "Sign In")}
           </button>
         </form>
 
@@ -101,14 +103,14 @@ export default function LoginPage() {
         <div className="mt-6 pt-6 border-t border-white/5">
           <div className="flex items-center gap-2 mb-3">
             <KeyRound className="w-4 h-4 text-amber-400" />
-            <span className="text-sm text-[#9ca3af]">קוד גישה</span>
+            <span className="text-sm text-[#9ca3af]">{isHe ? "קוד גישה" : "Access code"}</span>
           </div>
           <div className="flex gap-2">
             <input
               type="text"
               value={accessCode}
               onChange={(e) => { setAccessCode(e.target.value); setCodeError(''); }}
-              placeholder="הזן קוד..."
+              placeholder={isHe ? "הזן קוד..." : "Enter code..."}
               className="flex-1 px-4 py-3 bg-[#111] border border-white/10 rounded-lg text-[#e5e5e5] placeholder-[#9ca3af]/50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm text-center tracking-widest uppercase"
               dir="ltr"
             />
@@ -119,14 +121,14 @@ export default function LoginPage() {
               className="px-5 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-600/50 text-white font-semibold rounded-lg transition-colors text-sm whitespace-nowrap flex items-center gap-1.5"
             >
               {codeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              כניסה
+              {isHe ? "כניסה" : "Enter"}
             </button>
           </div>
           {codeError && <p className="text-sm text-[#ef4444] text-center mt-2">{codeError}</p>}
         </div>
 
         <p className="text-sm text-[#9ca3af] text-center mt-6">
-          No account? <a href="/register" className="text-blue-400 font-medium hover:text-blue-300">Create one</a>
+          {isHe ? "אין לך חשבון? " : "No account? "}<a href="/register" className="text-blue-400 font-medium hover:text-blue-300">{isHe ? "צור אחד" : "Create one"}</a>
         </p>
       </div>
     </div>

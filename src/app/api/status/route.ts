@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import pkg from '../../../../package.json'
 
 export async function GET() {
   const start = Date.now()
@@ -6,7 +7,7 @@ export async function GET() {
   return NextResponse.json({
     status: 'ok',
     app: 'postpilot',
-    version: process.env.npm_package_version || '1.0.0',
+    version: pkg.version,
     latency: Date.now() - start,
     timestamp: new Date().toISOString(),
     node: process.version,
